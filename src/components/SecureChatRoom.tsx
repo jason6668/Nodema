@@ -313,10 +313,10 @@ export default function SecureChatRoom({
 
   // Real-time synchronization state & refs
   const [myUserId] = useState(() => {
-    const saved = localStorage.getItem('nodecrypt_my_user_id');
+    const saved = sessionStorage.getItem('nodecrypt_my_user_id');
     if (saved) return saved;
     const newId = `user-${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('nodecrypt_my_user_id', newId);
+    sessionStorage.setItem('nodecrypt_my_user_id', newId);
     return newId;
   });
   const [realOnlineUsers, setRealOnlineUsers] = useState<any[]>([]);
@@ -375,7 +375,7 @@ export default function SecureChatRoom({
             privateTo: privatePeerName || undefined
           };
 
-          setMessages((prev) => [...prev, { ...socketMsg, userId: 'self', userName: `${nickname} (我)` }]);
+          setMessages((prev) => [...prev, socketMsg]);
           e.target.value = '';
 
           if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -419,7 +419,7 @@ export default function SecureChatRoom({
             privateTo: privatePeerName || undefined
           };
 
-          setMessages((prev) => [...prev, { ...socketMsg, userId: 'self', userName: `${nickname} (我)` }]);
+          setMessages((prev) => [...prev, socketMsg]);
           e.target.value = '';
 
           if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -761,8 +761,8 @@ export default function SecureChatRoom({
               if (data.messages && data.messages.length > 0) {
                 const decryptedMsgs = await Promise.all(
                   data.messages.map(async (m: ChatMessage) => {
-                    if (m.userId === myUserId || m.userId === 'self') {
-                      return { ...m, userId: 'self', userName: `${m.userName} (我)` };
+                    if (m.userId === myUserId) {
+                      return m;
                     }
                     if (m.encryptedContent && !m.isBurned) {
                       try {
@@ -856,10 +856,7 @@ export default function SecureChatRoom({
               const processIncomingMessage = async () => {
                 let processedMsg = { ...incomingMsg };
                 
-                if (processedMsg.userId === myUserId) {
-                  processedMsg.userId = 'self';
-                  processedMsg.userName = `${processedMsg.userName} (我)`;
-                } else if (processedMsg.encryptedContent && !processedMsg.isBurned) {
+                if (processedMsg.userId !== myUserId && processedMsg.encryptedContent && !processedMsg.isBurned) {
                   try {
                     const decrypted = await decryptText(processedMsg.encryptedContent, passphrase);
                     processedMsg.content = decrypted;
@@ -869,7 +866,7 @@ export default function SecureChatRoom({
                   }
                 }
 
-                if (processedMsg.userId !== 'self') {
+                if (processedMsg.userId !== myUserId) {
                   playNotificationSound();
                   triggerDesktopNotification(processedMsg.userName, processedMsg.content);
                 }
@@ -965,7 +962,7 @@ export default function SecureChatRoom({
           setMessages((prev) => {
             if (parsed.length > prev.length) {
               const last = parsed[parsed.length - 1];
-              if (last && last.userId !== 'self') {
+              if (last && last.userId !== myUserId) {
                 playNotificationSound();
                 triggerDesktopNotification(last.userName, last.content);
               }
@@ -1146,7 +1143,7 @@ export default function SecureChatRoom({
         privateTo: privatePeerName || undefined
       };
 
-      setMessages((prev) => [...prev, { ...socketMsg, userId: 'self', userName: `${nickname} (我)` }]);
+      setMessages((prev) => [...prev, socketMsg]);
       setInputText('');
       setReplyTarget(null);
 
@@ -2237,7 +2234,7 @@ export default function SecureChatRoom({
                     <div className={`max-w-[75%] space-y-1 ${isSelf ? 'items-end' : 'items-start'}`}>
                       {/* Nickname & lock status info */}
                       <div className={`flex items-center gap-1.5 text-[10px] text-zinc-500 ${isSelf ? 'flex-row-reverse' : ''}`}>
-                        <span className="font-extrabold text-zinc-400">{msg.userName}</span>
+                        <span className="font-extrabold text-zinc-400">{isSelf ? `${msg.userName.replace(' (我)', '')} (我)` : msg.userName}</span>
                         {msg.isPrivate ? (
                           <span className="flex items-center gap-0.5 text-[9px] text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded font-black border border-indigo-500/10">
                             <Lock className="w-2.5 h-2.5" />
