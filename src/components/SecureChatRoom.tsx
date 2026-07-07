@@ -668,7 +668,17 @@ export default function SecureChatRoom({
     const saved = localStorage.getItem(`nodecrypt_notif_sound_${roomId}`);
     return saved !== 'false';
   });
-  const [showSettingsSidebar, setShowSettingsSidebar] = useState(true); // Left sidebar open by default
+  // Responsive layout helpers
+  const [isDesktopLayout, setIsDesktopLayout] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
+
+  // Sidebars: desktop default open, mobile default closed (avoid遮挡主聊天区)
+  const [showSettingsSidebar, setShowSettingsSidebar] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
   const [showMembersSidebar, setShowMembersSidebar] = useState(false); // Right sidebar toggleable
   
   // Searchable Category-based Emoji Picker
@@ -709,6 +719,32 @@ export default function SecureChatRoom({
     };
   }, []);
 
+  // Track breakpoint changes (mobile/desktop) and auto-close sidebars on mobile
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mql = window.matchMedia('(min-width: 1024px)');
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      const matches = 'matches' in e ? e.matches : (e as MediaQueryList).matches;
+      setIsDesktopLayout(matches);
+      if (!matches) {
+        setShowSettingsSidebar(false);
+        setShowMembersSidebar(false);
+      }
+    };
+
+    // init + subscribe
+    handler(mql);
+    if ('addEventListener' in mql) {
+      mql.addEventListener('change', handler as (e: MediaQueryListEvent) => void);
+      return () => mql.removeEventListener('change', handler as (e: MediaQueryListEvent) => void);
+    }
+    // Safari older fallback
+    // @ts-ignore
+    mql.addListener(handler);
+    // @ts-ignore
+    return () => mql.removeListener(handler);
+  }, []);
+
   // System Welcome E2EE & WebSocket Multi-User Sync
   useEffect(() => {
     let reconnectTimeout: any;
@@ -723,8 +759,22 @@ export default function SecureChatRoom({
     const connectWs = () => {
       if (isDisposed) return;
 
+      // Support split deployment: static frontend + separate WS backend
+      // - If `VITE_WS_URL` is provided, it will be used as the WebSocket endpoint.
+      //   Examples:
+      //   - https://api.example.com  -> wss://api.example.com
+      //   - http://localhost:3000   -> ws://localhost:3000
+      //   - ws://localhost:3000     -> ws://localhost:3000
+      const rawEnvWsUrl = (import.meta as any)?.env?.VITE_WS_URL as string | undefined;
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}`;
+      const wsUrl = (() => {
+        if (!rawEnvWsUrl) return `${wsProtocol}//${window.location.host}`;
+        if (rawEnvWsUrl.startsWith('ws://') || rawEnvWsUrl.startsWith('wss://')) return rawEnvWsUrl;
+        if (rawEnvWsUrl.startsWith('https://')) return `wss://${rawEnvWsUrl.slice('https://'.length)}`;
+        if (rawEnvWsUrl.startsWith('http://')) return `ws://${rawEnvWsUrl.slice('http://'.length)}`;
+        // allow bare host:port
+        return `${wsProtocol}//${rawEnvWsUrl}`;
+      })();
       console.log('Connecting to NodeCrypt WebSocket server:', wsUrl);
       
       const socket = new WebSocket(wsUrl);
@@ -1287,7 +1337,11 @@ export default function SecureChatRoom({
 
   return (
     <div
-      className={`w-full ${showSettingsSidebar || showMembersSidebar ? 'max-w-6xl' : 'max-w-2xl'} mx-auto h-[850px] flex flex-col rounded-3xl border ${isThemeLight ? 'border-zinc-200 text-zinc-800' : 'border-zinc-800/80 text-slate-200'} overflow-hidden relative transition-all duration-300 shadow-2xl ${
+      className={`w-full ${
+        isDesktopLayout
+          ? (showSettingsSidebar || showMembersSidebar ? 'max-w-6xl' : 'max-w-2xl')
+          : 'max-w-full'
+      } mx-auto h-[calc(100dvh-1rem)] md:h-[850px] flex flex-col rounded-3xl border ${isThemeLight ? 'border-zinc-200 text-zinc-800' : 'border-zinc-800/80 text-slate-200'} overflow-hidden relative transition-all duration-300 shadow-2xl ${
         enableBlurOnInactive && !isWindowFocused ? 'blur-md brightness-50 scale-[0.99] pointer-events-none' : ''
       } ${THEMES.find(t => t.id === activeThemeId)?.bgClass || 'bg-[#07090E]'}`}
     >
