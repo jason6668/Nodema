@@ -1,0 +1,6 @@
+{
+  "name": "马老师NodeCrypt",
+  "description": "True end-to-end encrypted (E2EE) secure chat rooms integrated with high-fidelity Xiaohongshu (RED) style live streaming, co-hosting voice grids, real-time media feeds, flying bullet comments, custom gift animations, and interactive polls.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
