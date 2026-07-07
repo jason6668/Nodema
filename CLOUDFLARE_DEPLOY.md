@@ -69,7 +69,10 @@ wrangler pages deploy dist --project-name=nodecrypt-chat
    - 如果您接入了后端的 Gemini AI 智能辅佐或转译，可以通过 Cloudflare 控制台 -> 项目设置 -> "环境变量" 中安全绑定，无需写入明文代码，防范密钥泄露。
 2. **多端互通同步原理 (Multi-device / Multi-browser Sync)**:
    - 仅用 Cloudflare Pages（纯静态）时：可以利用浏览器的 `localStorage` 实现「同一浏览器的多标签页/多窗口」同步，但**不同浏览器（Chrome/Edge/Safari）之间无法互通**（各浏览器存储隔离）。
-   - 如需「不同浏览器 / 不同设备」互通：必须提供一个可用的 WebSocket 后端做转发（本项目已内置 `server.ts`）。前端可通过环境变量 `VITE_WS_URL` 指向该 WebSocket 服务地址（支持 `http(s)://` / `ws(s)://`）。
+   - 如需「不同浏览器 / 不同设备」互通：必须提供一个可用的 WebSocket 后端做转发。
+     - 方案 A：部署 Node 服务端（本项目 `server.ts` / `npm run start`）
+     - 方案 B（推荐）：部署 Cloudflare Worker + Durable Object（见 `CLOUDFLARE_WS_DEPLOY.md`）
+   - 前端通过环境变量 `VITE_WS_URL` 指向 WebSocket 后端的 base URL（支持 `http(s)://` / `ws(s)://` / `host:port`），并自动连接到 `/ws/<房间号>`。
 
 祝您体验愉快！如果有任何关于安全底座的调整需求，请随时告诉我。
 

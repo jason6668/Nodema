@@ -767,7 +767,7 @@ export default function SecureChatRoom({
       //   - ws://localhost:3000     -> ws://localhost:3000
       const rawEnvWsUrl = (import.meta as any)?.env?.VITE_WS_URL as string | undefined;
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = (() => {
+      const wsBaseUrl = (() => {
         if (!rawEnvWsUrl) return `${wsProtocol}//${window.location.host}`;
         if (rawEnvWsUrl.startsWith('ws://') || rawEnvWsUrl.startsWith('wss://')) return rawEnvWsUrl;
         if (rawEnvWsUrl.startsWith('https://')) return `wss://${rawEnvWsUrl.slice('https://'.length)}`;
@@ -775,6 +775,11 @@ export default function SecureChatRoom({
         // allow bare host:port
         return `${wsProtocol}//${rawEnvWsUrl}`;
       })();
+
+      // IMPORTANT:
+      // We connect to `/ws/:roomId` so Cloudflare Durable Object can route connections by room.
+      const normalizedBase = wsBaseUrl.replace(/\/+$/, '');
+      const wsUrl = `${normalizedBase}/ws/${encodeURIComponent(roomId)}`;
       console.log('Connecting to NodeCrypt WebSocket server:', wsUrl);
       
       const socket = new WebSocket(wsUrl);
