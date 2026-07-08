@@ -123,8 +123,8 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     onlineUsers: "在线成员",
     membersCount: "在线成员",
     inviteCoHost: "邀请连麦",
-    goLiveBtn: "开启小红书直播",
-    joinedLiveBtn: "进入小红书直播间",
+    goLiveBtn: "开启加密直播",
+    joinedLiveBtn: "进入加密直播间",
     burnNotice: "💣 消息已自动销毁 (Burned)",
     retractedNotice: "↩️ 消息已被发送者撤回",
     decryptSuccess: "解密成功",
@@ -857,7 +857,7 @@ export default function SecureChatRoom({
                     receivePeerMessage(
                       PEER_USERS[1].name,
                       PEER_USERS[1].avatar,
-                      lang === 'en' ? 'Yes, the host is about to start a live stream with voice and video interactive co-hosting soon!' : lang === 'es' ? 'Sí, ¡y el anfitrión va a transmitir en vivo muy pronto!' : '是的，听说等下主播要在房间里「开启小红书语音连麦直播间」，我们可以申请上麦一边加密聊天一边语音互动！'
+                      lang === 'en' ? 'Yes, the host is about to start a live stream with voice and video interactive co-hosting soon!' : lang === 'es' ? 'Sí, ¡y el anfitrión va a transmitir en vivo muy pronto!' : '是的，听说等下主播要在房间里开启加密语音连麦直播间，我们可以申请上麦一边加密聊天一边语音互动！'
                     );
                   }, 7000);
                 }
@@ -1361,7 +1361,7 @@ export default function SecureChatRoom({
         isDesktopLayout
           ? (showSettingsSidebar || showMembersSidebar ? 'max-w-6xl' : 'max-w-2xl')
           : 'max-w-full'
-      } mx-auto h-[calc(100dvh-1rem)] md:h-[850px] flex flex-col rounded-3xl border ${isThemeLight ? 'border-zinc-200 text-zinc-800' : 'border-zinc-800/80 text-slate-200'} overflow-hidden relative transition-all duration-300 shadow-2xl ${
+      } mx-auto h-[calc(100dvh-0.5rem)] md:h-[850px] flex flex-col rounded-2xl md:rounded-3xl border ${isThemeLight ? 'border-zinc-200 text-zinc-800' : 'border-zinc-800/80 text-slate-200'} overflow-hidden relative transition-all duration-300 shadow-2xl ${
         enableBlurOnInactive && !isWindowFocused ? 'blur-md brightness-50 scale-[0.99] pointer-events-none' : ''
       } ${THEMES.find(t => t.id === activeThemeId)?.bgClass || 'bg-[#07090E]'}`}
     >
@@ -1383,19 +1383,19 @@ export default function SecureChatRoom({
       )}
 
       {/* 1. ROOM HEADER METADATA */}
-      <div className={`px-4 py-3.5 border-b flex items-center justify-between z-20 transition-all duration-300 ${
-        isThemeLight 
-          ? 'bg-white/85 border-zinc-200 text-zinc-800 backdrop-blur-md' 
+      <div className={`px-3 md:px-4 py-2.5 md:py-3.5 border-b flex items-center justify-between z-20 transition-all duration-300 ${
+        isThemeLight
+          ? 'bg-white/85 border-zinc-200 text-zinc-800 backdrop-blur-md'
           : 'bg-zinc-950/80 border-zinc-800/80 text-white backdrop-blur-md'
       }`}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <button
             onClick={onLeave}
-            className={`p-1.5 rounded-lg transition ${isThemeLight ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900' : 'hover:bg-zinc-800/60 text-zinc-400 hover:text-white'}`}
+            className={`p-1 md:p-1.5 rounded-lg transition ${isThemeLight ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900' : 'hover:bg-zinc-800/60 text-zinc-400 hover:text-white'}`}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
           </button>
-          
+
           <div>
             <div className="flex items-center gap-1.5">
               <span className={`font-extrabold text-sm tracking-tight flex items-center gap-1 ${isThemeLight ? 'text-zinc-900' : 'text-white'}`}>
@@ -1414,13 +1414,13 @@ export default function SecureChatRoom({
         </div>
 
         {/* Action Controls (Go Live / Call Controls / Wallpaper / Copy / Panel Toggles) */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           {/* E2EE Voice Call */}
           <button
             type="button"
             onClick={() => handleStartCall('voice')}
             disabled={callState !== 'idle'}
-            className={`p-2 rounded-xl border transition flex items-center gap-1 text-xs font-semibold ${
+            className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
               callState === 'connected' && callType === 'voice'
                 ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.15)] animate-pulse'
                 : isThemeLight
@@ -1429,7 +1429,7 @@ export default function SecureChatRoom({
             }`}
             title="E2EE语音通话"
           >
-            <Phone className="w-3.5 h-3.5 text-emerald-500 animate-bounce" />
+            <Phone className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-500 animate-bounce" />
             <span className="hidden md:inline text-[11px]">语音通话</span>
           </button>
 
@@ -1438,7 +1438,7 @@ export default function SecureChatRoom({
             type="button"
             onClick={() => handleStartCall('video')}
             disabled={callState !== 'idle'}
-            className={`p-2 rounded-xl border transition flex items-center gap-1 text-xs font-semibold ${
+            className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
               callState === 'connected' && callType === 'video'
                 ? 'bg-pink-500/20 border-pink-500/50 text-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.15)] animate-pulse'
                 : isThemeLight
@@ -1447,7 +1447,7 @@ export default function SecureChatRoom({
             }`}
             title="E2EE视频通话"
           >
-            <Video className="w-3.5 h-3.5 text-pink-500 animate-pulse" />
+            <Video className="w-3 h-3 md:w-3.5 md:h-3.5 text-pink-500 animate-pulse" />
             <span className="hidden md:inline text-[11px]">视频通话</span>
           </button>
 
@@ -1460,7 +1460,7 @@ export default function SecureChatRoom({
                 setActiveThemeId('sakura_dream');
               }
             }}
-            className={`p-2 border rounded-xl transition flex items-center gap-1.5 active:scale-95 ${
+            className={`p-1.5 md:p-2 border rounded-lg md:rounded-xl transition flex items-center gap-1 md:gap-1.5 active:scale-95 ${
               isThemeLight
                 ? 'bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100'
                 : 'bg-zinc-900 border-zinc-800 text-indigo-400 hover:text-white hover:bg-zinc-800/60'
@@ -1469,13 +1469,13 @@ export default function SecureChatRoom({
           >
             {isThemeLight ? (
               <>
-                <Moon className="w-3.5 h-3.5 animate-pulse" />
-                <span className="text-[10px] font-black hidden sm:inline">夜间</span>
+                <Moon className="w-3 h-3 md:w-3.5 md:h-3.5 animate-pulse" />
+                <span className="text-[9px] md:text-[10px] font-black hidden sm:inline">夜间</span>
               </>
             ) : (
               <>
-                <Sun className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
-                <span className="text-[10px] font-black hidden sm:inline text-amber-400">白天</span>
+                <Sun className="w-3 h-3 md:w-3.5 md:h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+                <span className="text-[9px] md:text-[10px] font-black hidden sm:inline text-amber-400">白天</span>
               </>
             )}
           </button>
@@ -1483,23 +1483,23 @@ export default function SecureChatRoom({
           {/* Settings Toggle Panel */}
           <button
             onClick={() => setShowSettingsSidebar(!showSettingsSidebar)}
-            className={`p-2 rounded-xl border transition flex items-center gap-1 text-xs font-semibold ${
-              showSettingsSidebar 
-                ? 'bg-red-500/20 border-red-500/50 text-red-600 shadow-[0_0_10px_rgba(239,68,68,0.15)]' 
+            className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
+              showSettingsSidebar
+                ? 'bg-red-500/20 border-red-500/50 text-red-600 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
                 : isThemeLight
                 ? 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900'
                 : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800/60'
             }`}
             title="Toggle Settings Sidebar"
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-3 h-3 md:w-3.5 md:h-3.5" />
             <span className="hidden sm:inline text-[11px]">{t.settings}</span>
           </button>
 
           {/* Members Toggle Panel */}
           <button
             onClick={() => setShowMembersSidebar(!showMembersSidebar)}
-            className={`p-2 rounded-xl border transition flex items-center gap-1 text-xs font-semibold ${
+            className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
               showMembersSidebar 
                 ? 'bg-red-500/20 border-red-500/50 text-red-600 shadow-[0_0_10px_rgba(239,68,68,0.15)]' 
                 : isThemeLight
@@ -1515,7 +1515,7 @@ export default function SecureChatRoom({
           {/* Share/Copy Room ID */}
           <button
             onClick={handleCopyRoomLink}
-            className={`p-2 border rounded-xl text-xs font-semibold flex items-center gap-1 transition ${
+            className={`p-1.5 md:p-2 border rounded-lg md:rounded-xl text-[11px] md:text-xs font-semibold flex items-center gap-1 transition ${
               isThemeLight
                 ? 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
                 : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800/60'
@@ -1524,12 +1524,12 @@ export default function SecureChatRoom({
           >
             {copiedRoomId ? (
               <>
-                <Check className="w-3.5 h-3.5 text-green-500" />
-                <span className="text-green-600 text-[11px]">已复制密匙</span>
+                <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-green-500" />
+                <span className="text-green-600 text-[10px] md:text-[11px] hidden sm:inline">已复制密匙</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5" />
+                <Copy className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 <span className="hidden sm:inline text-[11px]">邀请连麦</span>
               </>
             )}
@@ -1538,33 +1538,33 @@ export default function SecureChatRoom({
           {/* THEME SELECTION TRIGGER */}
           <button
             onClick={() => setShowThemeSelector(true)}
-            className={`p-2 border rounded-xl transition flex items-center gap-1.5 ${
+            className={`p-1.5 md:p-2 border rounded-lg md:rounded-xl transition flex items-center gap-1 md:gap-1.5 ${
               isThemeLight
                 ? 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900'
                 : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white'
             }`}
             title="更换房间主题"
           >
-            <Sparkles className="w-3.5 h-3.5 text-yellow-500 animate-pulse" />
-            <span className="text-[10px] font-extrabold hidden sm:inline">主题</span>
+            <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-yellow-500 animate-pulse" />
+            <span className="text-[9px] md:text-[10px] font-extrabold hidden sm:inline">主题</span>
           </button>
 
           {/* SPECIAL LIVE BROADCAST COMPONENT INTEGRATION TRIGGER (Add live stream feature!) */}
           {isLiveActive ? (
             <button
               onClick={onJoinLive}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white font-black text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse"
+              className="px-2.5 md:px-3.5 py-1.5 md:py-2 rounded-lg md:rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white font-black text-[11px] md:text-xs flex items-center gap-1 md:gap-1.5 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse"
             >
-              <Radio className="w-3.5 h-3.5 animate-spin" />
-              <span className="text-[11px]">进入直播间</span>
+              <Radio className="w-3 h-3 md:w-3.5 md:h-3.5 animate-spin" />
+              <span className="text-[10px] md:text-[11px]">进入直播间</span>
             </button>
           ) : (
             <button
               onClick={triggerLiveSettings}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#FF2442] to-[#FF4E69] hover:opacity-95 text-white font-black text-xs flex items-center gap-1.5 transition active:scale-95 shadow-[0_4px_12px_rgba(255,36,66,0.25)]"
+              className="px-2.5 md:px-3.5 py-1.5 md:py-2 rounded-lg md:rounded-xl bg-gradient-to-r from-[#FF2442] to-[#FF4E69] hover:opacity-95 text-white font-black text-[11px] md:text-xs flex items-center gap-1 md:gap-1.5 transition active:scale-95 shadow-[0_4px_12px_rgba(255,36,66,0.25)]"
             >
-              <Tv className="w-3.5 h-3.5" />
-              <span className="text-[11px]">开启直播</span>
+              <Tv className="w-3 h-3 md:w-3.5 md:h-3.5" />
+              <span className="text-[10px] md:text-[11px]">开启直播</span>
             </button>
           )}
         </div>
@@ -2177,23 +2177,25 @@ export default function SecureChatRoom({
           )}
 
           {/* 2. SECURITY STATUS BANNER */}
-          <div className={`${isThemeLight ? 'bg-white/70 border-zinc-200 text-zinc-600' : 'bg-zinc-900/50 border-zinc-800/20 text-zinc-400'} border-b px-4 py-2 flex items-center justify-between text-[10px] z-10 backdrop-blur-sm`}>
+          <div className={`${isThemeLight ? 'bg-white/70 border-zinc-200 text-zinc-600' : 'bg-zinc-900/50 border-zinc-800/20 text-zinc-400'} border-b px-3 md:px-4 py-1.5 md:py-2 flex items-center justify-between text-[9px] md:text-[10px] z-10 backdrop-blur-sm`}>
             <span className="flex items-center gap-1">
-              <Lock className="w-3 h-3 text-emerald-500 font-bold" />
-              <span>{t.e2eeStatus}</span>
+              <Lock className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-500 font-bold" />
+              <span className="hidden sm:inline">{t.e2eeStatus}</span>
+              <span className="sm:hidden">E2EE 加密中</span>
             </span>
-            <div className="flex items-center gap-4">
-              <label className={`flex items-center gap-1.5 cursor-pointer transition ${isThemeLight ? 'hover:text-zinc-900' : 'hover:text-white'}`}>
+            <div className="flex items-center gap-2 md:gap-4">
+              <label className={`flex items-center gap-1 md:gap-1.5 cursor-pointer transition ${isThemeLight ? 'hover:text-zinc-900' : 'hover:text-white'}`}>
                 <input
                   type="checkbox"
                   checked={enableWatermark}
                   onChange={(e) => setEnableWatermark(e.target.checked)}
-                  className={`rounded text-red-500 focus:ring-0 w-3 h-3 ${isThemeLight ? 'border-zinc-300 bg-white' : 'border-zinc-800 bg-zinc-950'}`}
+                  className={`rounded text-red-500 focus:ring-0 w-2.5 h-2.5 md:w-3 md:h-3 ${isThemeLight ? 'border-zinc-300 bg-white' : 'border-zinc-800 bg-zinc-950'}`}
                 />
-                <span>{t.screenshotWatermark}</span>
+                <span className="hidden sm:inline">{t.screenshotWatermark}</span>
+                <span className="sm:hidden">水印</span>
               </label>
 
-              <label className={`flex items-center gap-1.5 cursor-pointer transition ${isThemeLight ? 'hover:text-zinc-900' : 'hover:text-white'}`}>
+              <label className={`flex items-center gap-1 md:gap-1.5 cursor-pointer transition ${isThemeLight ? 'hover:text-zinc-900' : 'hover:text-white'}`}>
                 <input
                   type="checkbox"
                   checked={showRawEncrypted}
@@ -2207,13 +2209,13 @@ export default function SecureChatRoom({
 
           {/* 3. PRIVATE CHAT DOUBLE-TAB SELECTOR */}
           {privatePeerName && (
-            <div className={`px-4 py-2 flex items-center justify-between border-b ${isThemeLight ? 'bg-zinc-100/60 border-zinc-200 text-zinc-800' : 'bg-zinc-950/80 border-zinc-850 text-white'} z-20 backdrop-blur-sm`}>
-              <div className="flex gap-1.5">
+            <div className={`px-3 md:px-4 py-1.5 md:py-2 flex items-center justify-between border-b ${isThemeLight ? 'bg-zinc-100/60 border-zinc-200 text-zinc-800' : 'bg-zinc-950/80 border-zinc-850 text-white'} z-20 backdrop-blur-sm`}>
+              <div className="flex gap-1 md:gap-1.5">
                 <button
                   onClick={() => setIsShowingPrivateOnly(false)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-black transition flex items-center gap-1 ${
-                    !isShowingPrivateOnly 
-                      ? isThemeLight ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-950 shadow-sm' 
+                  className={`px-2 md:px-3 py-1 rounded-full text-[10px] md:text-[11px] font-black transition flex items-center gap-1 ${
+                    !isShowingPrivateOnly
+                      ? isThemeLight ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-950 shadow-sm'
                       : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
@@ -2221,9 +2223,9 @@ export default function SecureChatRoom({
                 </button>
                 <button
                   onClick={() => setIsShowingPrivateOnly(true)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-black transition flex items-center gap-1 ${
-                    isShowingPrivateOnly 
-                      ? 'bg-indigo-600 text-white shadow-sm' 
+                  className={`px-2 md:px-3 py-1 rounded-full text-[10px] md:text-[11px] font-black transition flex items-center gap-1 ${
+                    isShowingPrivateOnly
+                      ? 'bg-indigo-600 text-white shadow-sm'
                       : 'text-zinc-500 hover:text-indigo-400'
                   }`}
                 >
@@ -2235,7 +2237,7 @@ export default function SecureChatRoom({
                   setPrivatePeerName(null);
                   setIsShowingPrivateOnly(false);
                 }}
-                className="text-[9px] font-black text-rose-500 hover:text-rose-600 bg-rose-500/10 px-2.5 py-1 rounded-full transition"
+                className="text-[9px] font-black text-rose-500 hover:text-rose-600 bg-rose-500/10 px-2 md:px-2.5 py-1 rounded-full transition"
               >
                 返回群聊
               </button>
@@ -2243,7 +2245,7 @@ export default function SecureChatRoom({
           )}
 
           {/* 4. MESSAGE WINDOW CONTAINER */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent z-10">
+          <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent z-10">
             <AnimatePresence>
               {messages.filter(msg => {
                 if (msg.type === 'system') return true;
@@ -2715,16 +2717,16 @@ export default function SecureChatRoom({
             )}
 
             {/* Input Text Form Area */}
-            <form onSubmit={handleSendMessage} className="flex gap-2">
+            <form onSubmit={handleSendMessage} className="flex gap-1.5 md:gap-2">
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 disabled={isRecording}
                 placeholder={isRecording ? t.inputTextRecording : t.inputTextPlaceholder}
-                className={`flex-1 focus:border-red-500 focus:ring-1 focus:ring-red-500/20 text-xs rounded-xl px-4 py-3 focus:outline-none transition-all duration-300 ${
-                  isThemeLight 
-                    ? 'bg-zinc-50 border border-zinc-200 text-zinc-800 placeholder-zinc-400' 
+                className={`flex-1 focus:border-red-500 focus:ring-1 focus:ring-red-500/20 text-[11px] md:text-xs rounded-lg md:rounded-xl px-3 md:px-4 py-2 md:py-3 focus:outline-none transition-all duration-300 ${
+                  isThemeLight
+                    ? 'bg-zinc-50 border border-zinc-200 text-zinc-800 placeholder-zinc-400'
                     : 'bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-500'
                 }`}
                 maxLength={140}
@@ -2732,9 +2734,9 @@ export default function SecureChatRoom({
 
               <button
                 type="submit"
-                className="p-3 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 text-white rounded-xl shadow-lg active:scale-95 transition"
+                className="p-2 md:p-3 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 text-white rounded-lg md:rounded-xl shadow-lg active:scale-95 transition"
               >
-                <Send className="w-4.5 h-4.5" />
+                <Send className="w-3.5 h-3.5 md:w-4.5 md:h-4.5" />
               </button>
             </form>
           </div>
