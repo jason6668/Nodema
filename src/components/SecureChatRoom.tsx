@@ -760,7 +760,7 @@ export default function SecureChatRoom({
       if (isDisposed) return;
 
       // Support split deployment: static frontend + separate WS backend
-      const wsBaseUrl = "wss://mi.8818618.xyz";
+      const wsBaseUrl = "wss://nodecrypt.comeonsad.workers.dev";
 
       // IMPORTANT:
       // We connect to `/ws/:roomId` so Cloudflare Durable Object can route connections by room.
