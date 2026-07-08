@@ -8,53 +8,73 @@
 
 使用 Cloudflare Workers + Durable Objects 来维护 WebSocket 连接状态和房间数据。
 
+## ⚠️ 重要：架构说明
+
+本项目需要**分别部署**两个部分：
+
+1. **Worker（后端）**: WebSocket 服务器，使用 Durable Objects 管理状态
+2. **Pages（前端）**: React 静态网页，连接到 Worker
+
+**Worker 和 Pages 是 Cloudflare 的两个不同服务，必须分开配置！**
+
 ## 部署步骤
 
-### 1. 安装依赖
+### 第一步：部署 Worker（后端）
 
 ```bash
+# 1. 安装依赖
 npm install
-```
 
-### 2. 配置环境变量
-
-在 `.env` 文件中设置：
-
-```bash
-VITE_WS_URL="https://your-worker-name.your-subdomain.workers.dev"
-```
-
-### 3. 部署 Cloudflare Workers
-
-```bash
-# 安装 Wrangler CLI（如果还没有安装）
+# 2. 安装 Wrangler CLI（如果还没有安装）
 npm install -g wrangler
 
-# 登录 Cloudflare
+# 3. 登录 Cloudflare
 wrangler login
 
-# 部署 Workers
+# 4. 部署 Worker
 npm run deploy:worker
 ```
 
-### 4. 配置 Cloudflare Pages
+部署成功后，你会看到类似这样的输出：
+```
+✨ Published nodecrypt (1.23 sec)
+   https://nodecrypt.your-subdomain.workers.dev
+```
 
-1. 在 Cloudflare Dashboard 中创建 Pages 项目
+**记住这个 URL，后面配置 Pages 时需要用到！**
+
+### 第二步：配置 Worker 的 Durable Objects
+
+在 Cloudflare Dashboard 中：
+1. 进入 **Workers & Pages**
+2. 选择刚才部署的 **Worker**（不是 Pages！）
+3. 进入 **Settings** > **Durable Objects**
+4. 点击 **Add binding**
+5. 填写：
+   - **Variable name**: `ROOM_DURABLE_OBJECT`
+   - **Durable Object class**: `RoomDurableObject`
+6. 点击 **Save**
+
+**⚠️ 注意：如果下拉框里找不到 `RoomDurableObject`，说明 Worker 还没有成功部署。请检查 Worker 的部署状态。**
+
+### 第三步：部署 Pages（前端）
+
+1. 在 Cloudflare Dashboard 中创建 **Pages** 项目
 2. 连接到 GitHub 仓库
 3. 设置构建命令：
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
-4. 在环境变量中设置 `VITE_WS_URL` 为你的 Workers URL
+4. 在 **Environment variables** 中添加：
+   - **Variable name**: `VITE_WS_URL`
+   - **Value**: 第一步部署 Worker 时得到的 URL（例如：`https://nodecrypt.your-subdomain.workers.dev`）
+5. 点击 **Save and Deploy**
 
-### 5. 启用 Durable Objects
+### 第四步：验证部署
 
-在 Cloudflare Dashboard 中：
-1. 进入 Workers & Pages
-2. 选择你的 Worker
-3. 进入 Settings > Durable Objects
-4. 添加绑定：
-   - **Variable name**: `ROOM_DURABLE_OBJECT`
-   - **Durable Object class**: `RoomDurableObject`
+1. 打开 Pages 的 URL
+2. 进入一个房间
+3. 在另一个浏览器中打开同一个房间
+4. 发送消息，验证跨浏览器同步
 
 ## 架构说明
 
@@ -64,8 +84,8 @@ npm run deploy:worker
 ├── worker/
 │   ├── index.ts              # Workers 入口文件
 │   └── room-durable-object.ts # Durable Object 实现
-├── wrangler.toml            # Cloudflare 配置文件
-├── tsconfig.worker.json      # Workers TypeScript 配置
+├── wrangler.toml            # Cloudflare Worker 配置文件
+├── tsconfig.worker.json      # Worker TypeScript 配置
 └── src/
     └── components/
         └── SecureChatRoom.tsx # 前端 WebSocket 客户端
@@ -95,11 +115,19 @@ npm run deploy:worker
 
 ## 调试
 
-### 查看 Workers 日志
+### 查看 Worker 日志
 
 ```bash
 wrangler tail
 ```
+
+### 查看 Worker 部署状态
+
+在 Cloudflare Dashboard 中：
+1. 进入 **Workers & Pages**
+2. 选择你的 **Worker**
+3. 点击 **Deployments** 标签
+4. 查看最新部署的状态（应该显示 "Success"）
 
 ### 查看前端日志
 
@@ -108,12 +136,36 @@ wrangler tail
 - `[SEND MESSAGE]` - 发送的 WebSocket 消息
 - `[DURABLE OBJECT BROADCAST]` - Durable Object 广播日志
 
+## 常见问题
+
+### Q: 在 Worker 的 Durable Objects 设置中找不到 RoomDurableObject 类名？
+
+**A:** 这说明 Worker 还没有成功部署。请检查：
+1. Worker 的部署状态是否为 "Success"
+2. 如果部署失败，查看部署日志找出错误原因
+3. 确保 `wrangler.toml` 中的 `class_name` 与代码中的类名一致
+
+### Q: 部署 Worker 时出现编译错误？
+
+**A:** 可能的原因：
+1. TypeScript 类型错误：运行 `npm run lint` 检查
+2. 依赖缺失：运行 `npm install` 安装所有依赖
+3. 构建命令错误：确保 `package.json` 中有 `build:worker` 脚本
+
+### Q: 前端无法连接到 Worker？
+
+**A:** 检查：
+1. Pages 的环境变量 `VITE_WS_URL` 是否正确设置
+2. Worker 是否成功部署并启用了 Durable Objects
+3. 浏览器控制台是否有连接错误
+
 ## 注意事项
 
 1. **Durable Objects 限制**: 免费计划有 Durable Objects 使用限制
 2. **冷启动**: 首次连接可能有冷启动延迟
 3. **WebSocket 超时**: Cloudflare Workers WebSocket 连接有超时限制
 4. **数据清理**: 建议定期清理过期的房间数据
+5. **Worker 和 Pages 区别**: Worker 是后端服务，Pages 是前端托管，必须分开配置
 
 ## 回退到传统服务器
 

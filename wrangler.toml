@@ -10,7 +10,7 @@ name = "ROOM_DURABLE_OBJECT"
 class_name = "RoomDurableObject"
 
 [build]
-command = "npm run build"
+command = "npm run build:worker"
 
 [build.upload]
 format = "modules"
