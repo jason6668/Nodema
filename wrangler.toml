@@ -15,3 +15,7 @@ command = "npm run build:worker"
 [build.upload]
 format = "modules"
 main = "./dist/worker.js"
+
+[exports.RoomDurableObject]
+type = "durable-object"
+storage = "sqlite"

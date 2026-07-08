@@ -4,6 +4,8 @@ export interface Env {
   ROOM_DURABLE_OBJECT: DurableObjectNamespace;
 }
 
+export { RoomDurableObject };
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -18,7 +20,7 @@ export default {
 
       const id = env.ROOM_DURABLE_OBJECT.idFromName(roomId);
       const stub = env.ROOM_DURABLE_OBJECT.get(id);
-      
+
       return stub.fetch(request);
     }
 
