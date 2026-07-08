@@ -3,6 +3,7 @@ import path from "path";
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
+import type { IncomingMessage } from "http";
 
 // Interfaces for Server State
 interface UserProfile {
@@ -82,13 +83,26 @@ async function startServer() {
   const clients = new Map<WebSocket, { roomId: string; userId: string }>();
 
   // WebSocket Connection Handler
-  wss.on("connection", (ws: WebSocket) => {
+  wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     console.log("New WebSocket connection established");
+    const reqUrl = req.url || "/";
+    // Support Cloudflare-style path routing: /ws/:roomId
+    const roomIdFromPath = (() => {
+      try {
+        const match = reqUrl.match(/^\/ws\/([^/?#]+)/);
+        if (!match) return undefined;
+        return decodeURIComponent(match[1]);
+      } catch {
+        return undefined;
+      }
+    })();
 
     ws.on("message", (messageStr: string) => {
       try {
         const payload = JSON.parse(messageStr);
-        const { type, roomId, userId, data } = payload;
+        const { type, userId, data } = payload;
+        // roomId may be absent when using /ws/:roomId path routing
+        const roomId = payload.roomId || roomIdFromPath;
 
         if (!roomId || !userId) return;
 

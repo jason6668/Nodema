@@ -1,0 +1,13 @@
+name = "nodema-ws"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[durable_objects]
+bindings = [
+  { name = "CHAT_ROOMS", class_name = "ChatRoom" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["ChatRoom"]
+
