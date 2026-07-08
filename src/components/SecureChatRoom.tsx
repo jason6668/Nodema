@@ -803,7 +803,11 @@ export default function SecureChatRoom({
           const payload = JSON.parse(event.data);
           const { type, roomId: msgRoomId, data } = payload;
 
-          if (msgRoomId !== roomId) return;
+          console.log(`[WS MESSAGE] Type: ${type}, RoomId: ${msgRoomId}, MyRoomId: ${roomId}`);
+          if (msgRoomId !== roomId) {
+            console.log(`[WS MESSAGE] Ignoring message for different room: ${msgRoomId} !== ${roomId}`);
+            return;
+          }
 
           switch (type) {
             case 'init_state': {
@@ -1218,12 +1222,17 @@ export default function SecureChatRoom({
       setReplyTarget(null);
 
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({
+        const messagePayload = JSON.stringify({
           type: 'message',
           roomId,
           userId: myUserId,
           data: { message: socketMsg }
-        }));
+        });
+        console.log(`[SEND MESSAGE] Sending message to room ${roomId}, userId: ${myUserId}, messageId: ${socketMsg.id}`);
+        console.log(`[SEND MESSAGE] Payload:`, messagePayload);
+        wsRef.current.send(messagePayload);
+      } else {
+        console.error(`[SEND MESSAGE] WebSocket not ready. State: ${wsRef.current?.readyState}, OPEN: ${WebSocket.OPEN}`);
       }
 
       // Simulate Private Peer Reply

@@ -392,19 +392,31 @@ async function startServer() {
 
   // Broadcast helper function
   function broadcastToRoom(
-    roomId: string, 
-    msgObj: any, 
+    roomId: string,
+    msgObj: any,
     filterFn: (ws: WebSocket) => boolean = () => true
   ) {
     const rawMsg = JSON.stringify(msgObj);
+    let sentCount = 0;
+    let totalClients = 0;
+    let matchingClients = 0;
+
     wss.clients.forEach((client) => {
+      totalClients++;
       if (client.readyState === WebSocket.OPEN) {
         const info = clients.get(client);
-        if (info && info.roomId === roomId && filterFn(client)) {
-          client.send(rawMsg);
+        if (info && info.roomId === roomId) {
+          matchingClients++;
+          if (filterFn(client)) {
+            client.send(rawMsg);
+            sentCount++;
+            console.log(`[BROADCAST] Sent message to user ${info.userId} in room ${roomId}`);
+          }
         }
       }
     });
+
+    console.log(`[BROADCAST] Room: ${roomId}, Type: ${msgObj.type}, Total clients: ${totalClients}, Matching room: ${matchingClients}, Sent: ${sentCount}`);
   }
 
   // Vite development middleware vs production bundle static serving
