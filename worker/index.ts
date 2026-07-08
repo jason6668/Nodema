@@ -11,13 +11,17 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    console.log(`[WORKER] Request: ${request.method} ${path}`);
+
     // Route to Durable Object based on room ID for WebSocket connections
     if (path.startsWith('/ws/')) {
       const roomId = path.split('/')[2];
       if (!roomId) {
+        console.log('[WORKER] Room ID required');
         return new Response('Room ID required', { status: 400 });
       }
 
+      console.log(`[WORKER] Routing to Durable Object for room: ${roomId}`);
       const id = env.ROOM_DURABLE_OBJECT.idFromName(roomId);
       const stub = env.ROOM_DURABLE_OBJECT.get(id);
 

@@ -75,17 +75,23 @@ export class RoomDurableObject {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    console.log(`[DURABLE OBJECT] Request: ${request.method} ${path}`);
+
     // Handle WebSocket upgrade
     if (path.startsWith('/ws')) {
+      console.log(`[DURABLE OBJECT] WebSocket upgrade request`);
       const { 0: client, 1: server } = Object.values(new WebSocketPair());
-      
+
       server.accept();
-      
+      console.log(`[DURABLE OBJECT] WebSocket accepted`);
+
       this.sessions.set(server, ''); // Will be set on join
-      
+      console.log(`[DURABLE OBJECT] Current sessions: ${this.sessions.size}`);
+
       server.addEventListener('message', (event: MessageEvent) => {
         try {
           const payload = JSON.parse(event.data as string);
+          console.log(`[DURABLE OBJECT] Received WebSocket message:`, payload);
           this.handleMessage(server, payload);
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err);
@@ -94,6 +100,7 @@ export class RoomDurableObject {
 
       server.addEventListener('close', () => {
         const userId = this.sessions.get(server);
+        console.log(`[DURABLE OBJECT] WebSocket closed for user: ${userId}`);
         if (userId) {
           this.handleDisconnect(userId);
         }
