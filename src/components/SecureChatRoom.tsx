@@ -928,7 +928,22 @@ export default function SecureChatRoom({
         wsRef.current.close();
       }
     };
-  }, [roomId, nickname, avatarUrl, passphrase]);
+  }, [roomId, passphrase]);
+
+  // Send profile update when nickname or avatar changes
+  useEffect(() => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'join',
+        roomId,
+        userId: myUserId,
+        data: {
+          nickname,
+          avatarUrl
+        }
+      }));
+    }
+  }, [nickname, avatarUrl, roomId, myUserId]);
 
   // Sync state changes to localStorage
   useEffect(() => {
