@@ -1,0 +1,33 @@
+import { RoomDurableObject } from "./room-durable-object";
+
+export interface Env {
+  ROOM_DURABLE_OBJECT: DurableObjectNamespace;
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // Route to Durable Object based on room ID for WebSocket connections
+    if (path.startsWith('/ws/')) {
+      const roomId = path.split('/')[2];
+      if (!roomId) {
+        return new Response('Room ID required', { status: 400 });
+      }
+
+      const id = env.ROOM_DURABLE_OBJECT.idFromName(roomId);
+      const stub = env.ROOM_DURABLE_OBJECT.get(id);
+      
+      return stub.fetch(request);
+    }
+
+    // Health check endpoint
+    if (path === '/api/health') {
+      return Response.json({ status: "ok", service: "Cloudflare Workers WebSocket" });
+    }
+
+    // Serve static files for Pages
+    return new Response('NodeCrypt WebSocket Server on Cloudflare Workers', { status: 200 });
+  }
+};

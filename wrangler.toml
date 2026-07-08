@@ -1,0 +1,17 @@
+name = "nodecrypt"
+main = "worker/index.ts"
+compatibility_date = "2024-01-01"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[[durable_objects.bindings]]
+name = "ROOM_DURABLE_OBJECT"
+class_name = "RoomDurableObject"
+
+[build]
+command = "npm run build"
+
+[build.upload]
+format = "modules"
+main = "./dist/worker.js"
