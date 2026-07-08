@@ -760,21 +760,7 @@ export default function SecureChatRoom({
       if (isDisposed) return;
 
       // Support split deployment: static frontend + separate WS backend
-      // - If `VITE_WS_URL` is provided, it will be used as the WebSocket endpoint.
-      //   Examples:
-      //   - https://api.example.com  -> wss://api.example.com
-      //   - http://localhost:3000   -> ws://localhost:3000
-      //   - ws://localhost:3000     -> ws://localhost:3000
-      const rawEnvWsUrl = (import.meta as any)?.env?.VITE_WS_URL as string | undefined;
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsBaseUrl = (() => {
-        if (!rawEnvWsUrl) return `${wsProtocol}//${window.location.host}`;
-        if (rawEnvWsUrl.startsWith('ws://') || rawEnvWsUrl.startsWith('wss://')) return rawEnvWsUrl;
-        if (rawEnvWsUrl.startsWith('https://')) return `wss://${rawEnvWsUrl.slice('https://'.length)}`;
-        if (rawEnvWsUrl.startsWith('http://')) return `ws://${rawEnvWsUrl.slice('http://'.length)}`;
-        // allow bare host:port
-        return `${wsProtocol}//${rawEnvWsUrl}`;
-      })();
+      const wsBaseUrl = "wss://mi.8818618.xyz";
 
       // IMPORTANT:
       // We connect to `/ws/:roomId` so Cloudflare Durable Object can route connections by room.
