@@ -258,18 +258,9 @@ export default function App() {
               : 'bg-zinc-900/60 border border-zinc-800/60'
           }`}>
             <button
-              onClick={() => setActiveTab('both')}
-              className={`hidden md:flex px-4 py-1.5 rounded-full text-xs font-bold transition items-center gap-1.5 ${
-                activeTab === 'both' ? 'bg-[#FF2442] text-white' : isThemeLight ? 'text-zinc-600 hover:text-zinc-950' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span>综合双控台</span>
-            </button>
-            <button
               onClick={() => setActiveTab('chat')}
               className={`px-4 md:px-4 py-2 md:py-1.5 rounded-full text-sm md:text-xs font-bold transition flex items-center gap-1.5 md:gap-1.5 ${
-                activeTab === 'chat' || (activeTab === 'both' && !isLiveActive)
+                activeTab === 'chat'
                   ? 'bg-zinc-800 text-white'
                   : isThemeLight ? 'text-zinc-600 hover:text-zinc-950' : 'text-zinc-400 hover:text-white'
               }`}
@@ -277,21 +268,6 @@ export default function App() {
               <LockKeyhole className="w-4 h-4 md:w-3.5 md:h-3.5" />
               <span className="hidden sm:inline">密讯聊天</span>
               <span className="sm:hidden">聊天</span>
-            </button>
-            <button
-              onClick={() => {
-                if (!isLiveActive) {
-                  setShowCreationStudio(true);
-                }
-                setActiveTab('live');
-              }}
-              className={`px-4 md:px-4 py-2 md:py-1.5 rounded-full text-sm md:text-xs font-bold transition flex items-center gap-1.5 md:gap-1.5 ${
-                activeTab === 'live' ? 'bg-[#FF2442] text-white animate-pulse' : isThemeLight ? 'text-zinc-600 hover:text-zinc-950' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Tv className="w-4 h-4 md:w-3.5 md:h-3.5" />
-              <span className="hidden sm:inline">直播功能</span>
-              <span className="sm:hidden">直播</span>
             </button>
           </div>
         )}
@@ -521,165 +497,6 @@ export default function App() {
                   />
                 </div>
 
-                {/* 1. LEFT PANEL: THE SMARTPHONE LIVE STREAM SCREEN */}
-                {/* Rendered on Desktop 'both' split layout, or when 'live' tab is active */}
-                <div
-                  className={`${
-                    activeTab === 'both' ? 'hidden lg:flex lg:col-span-5' : activeTab === 'live' ? 'flex lg:col-span-12' : 'hidden'
-                  } w-full justify-center`}
-                >
-                  <div className="relative w-full max-w-md mx-auto lg:max-w-full">
-                    {/* Mobile: Full screen live page without phone frame */}
-                    <div className="lg:hidden w-full h-[calc(100dvh-8rem)] bg-zinc-950 overflow-hidden">
-                      <AnimatePresence mode="wait">
-                        {showCreationStudio && !activeRoomSettings ? (
-                          <motion.div
-                            key="creation-studio"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="h-full"
-                          >
-                            <CreationStudio
-                              onStart={handleStartLive}
-                              onClose={() => setShowCreationStudio(false)}
-                            />
-                          </motion.div>
-                        ) : activeRoomSettings ? (
-                          <motion.div
-                            key="active-live-room"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="h-full"
-                          >
-                            <LiveRoom
-                              settings={activeRoomSettings}
-                              onClose={handleCloseLive}
-                              nickname={nickname}
-                              avatarUrl={customAvatarUrl || PRESET_AVATARS[selectedAvatarIdx]}
-                            />
-                          </motion.div>
-                        ) : (
-                          /* Live stream inactive placeholder screen - mobile full screen */
-                          <motion.div
-                            key="live-inactive-placeholder"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="h-full flex flex-col justify-between p-6 bg-gradient-to-b from-zinc-900 via-[#0A0C10] to-zinc-950 text-center"
-                          >
-                            <div className="my-auto space-y-6">
-                              <div className="mx-auto w-20 h-20 rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center shadow-lg text-zinc-500">
-                                <Radio className="w-10 h-10 text-zinc-600" />
-                              </div>
-
-                              <div className="space-y-3">
-                                <h4 className="font-extrabold text-lg text-zinc-200">直播间处于空闲状态</h4>
-                                <p className="text-base text-zinc-500 leading-relaxed px-4">
-                                  当前加密房内未开启直播。任何人都可以开启直播，邀请房间里的伙伴加入，开启语音/视频互动。
-                                </p>
-                              </div>
-
-                              <button
-                                onClick={() => {
-                                  setShowCreationStudio(true);
-                                  setActiveTab('both');
-                                }}
-                                className="px-8 py-4 bg-gradient-to-r from-[#FF2442] to-[#FF4E69] text-white font-extrabold text-base rounded-xl shadow-lg shadow-red-500/10 hover:brightness-105 transition"
-                              >
-                                开启加密直播
-                              </button>
-                            </div>
-
-                            <div className="border-t border-zinc-900 pt-4 text-xs text-zinc-600 font-mono">
-                              RED LIVE STREAM WRAPPER • OFFLINE
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
-                    {/* Desktop: Phone frame decoration */}
-                    <div className="hidden lg:block relative bg-[#0F111A] rounded-[42px] p-3.5 shadow-2xl border-4 border-zinc-800/80 ring-1 ring-zinc-700/50 overflow-hidden">
-                      {/* Speaker Hole */}
-                      <div className="absolute top-6 left-1/2 -translate-x-1/2 w-20 h-4 bg-black rounded-full z-50 flex items-center justify-center">
-                        <div className="w-2 h-2 rounded-full bg-zinc-800/80 ml-2" />
-                      </div>
-
-                      {/* Content inside the smartphone wrapper */}
-                      <div className="rounded-[30px] overflow-hidden bg-zinc-950 relative h-[800px]">
-                        <AnimatePresence mode="wait">
-                          {showCreationStudio && !activeRoomSettings ? (
-                            <motion.div
-                              key="creation-studio"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              className="h-full"
-                            >
-                              <CreationStudio
-                                onStart={handleStartLive}
-                                onClose={() => setShowCreationStudio(false)}
-                              />
-                            </motion.div>
-                          ) : activeRoomSettings ? (
-                            <motion.div
-                              key="active-live-room"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              className="h-full"
-                            >
-                              <LiveRoom
-                                settings={activeRoomSettings}
-                                onClose={handleCloseLive}
-                                nickname={nickname}
-                                avatarUrl={customAvatarUrl || PRESET_AVATARS[selectedAvatarIdx]}
-                              />
-                            </motion.div>
-                          ) : (
-                            /* Live stream inactive placeholder screen inside phone */
-                            <motion.div
-                              key="live-inactive-placeholder"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              className="h-full flex flex-col justify-between p-6 bg-gradient-to-b from-zinc-900 via-[#0A0C10] to-zinc-950 text-center"
-                            >
-                              <div className="my-auto space-y-6">
-                                <div className="mx-auto w-16 h-16 rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center shadow-lg text-zinc-500">
-                                  <Radio className="w-8 h-8 text-zinc-600" />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <h4 className="font-extrabold text-base text-zinc-200">直播间处于空闲状态</h4>
-                                  <p className="text-xs text-zinc-500 leading-relaxed px-4">
-                                    当前加密房内未开启直播。任何人都可以开启直播，邀请房间里的伙伴加入，开启语音/视频互动。
-                                  </p>
-                                </div>
-
-                                <button
-                                  onClick={() => {
-                                    setShowCreationStudio(true);
-                                    setActiveTab('both');
-                                  }}
-                                  className="px-6 py-3 bg-gradient-to-r from-[#FF2442] to-[#FF4E69] text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-500/10 hover:brightness-105 transition"
-                                >
-                                  开启加密直播
-                                </button>
-                              </div>
-
-                              <div className="border-t border-zinc-900 pt-4 text-[10px] text-zinc-600 font-mono">
-                                RED LIVE STREAM WRAPPER • OFFLINE
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </motion.div>
           )}

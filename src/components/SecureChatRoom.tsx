@@ -597,6 +597,59 @@ export default function SecureChatRoom({
     }, 3500);
   };
 
+  // Initiate private call with specific user
+  const handleStartPrivateCall = async (user: any, type: 'voice' | 'video') => {
+    setCallType(type);
+    setCallState('ringing');
+    setCallDuration(0);
+    setIsCallMuted(false);
+    setIsCallCameraOff(false);
+    setActiveCallPeer(user);
+
+    // Play ringing loop sound
+    playRingingSound();
+    ringtoneIntervalRef.current = setInterval(() => {
+      playRingingSound();
+    }, 2500);
+
+    // If video, try setting up webcam
+    if (type === 'video') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 320, height: 240, facingMode: 'user' },
+          audio: true
+        });
+        setLocalStream(stream);
+      } catch (err) {
+        console.warn('Webcam permission denied or unavailable:', err);
+      }
+    }
+
+    // Auto connect after 3.5 seconds simulating peer pickup
+    setTimeout(() => {
+      if (ringtoneIntervalRef.current) {
+        clearInterval(ringtoneIntervalRef.current);
+        ringtoneIntervalRef.current = null;
+      }
+      playConnectedSound();
+      setCallState('connected');
+
+      // Add connection message to chat E2EE
+      const secureLabel = type === 'video' ? '🔒 AES-GCM 端对端加密视频通话已联通' : '🔒 AES-GCM 端对端加密语音通话已联通';
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `private-call-log-start-${Date.now()}`,
+          userId: 'system',
+          userName: 'NodeCrypt',
+          avatar: '',
+          content: `${secureLabel} (与 ${user.nickname} 私聊通话中)`,
+          type: 'system'
+        }
+      ]);
+    }, 3500);
+  };
+
   // Disconnect call session
   const handleHangUp = () => {
     playHangupSound();
@@ -2853,6 +2906,20 @@ export default function SecureChatRoom({
                       {/* Member Action Buttons */}
                       <div className="flex items-center gap-1 shrink-0">
                         <button
+                          onClick={() => handleStartPrivateCall(user, 'voice')}
+                          className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white transition"
+                          title="语音通话"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleStartPrivateCall(user, 'video')}
+                          className="p-1.5 rounded-lg bg-pink-500/10 hover:bg-pink-500 text-pink-500 hover:text-white transition"
+                          title="视频通话"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => {
                             setPrivatePeerName(user.nickname);
                             setIsShowingPrivateOnly(true);
@@ -2919,6 +2986,22 @@ export default function SecureChatRoom({
           )}
         </AnimatePresence>
 
+      </div>
+
+      {/* Floating Action Button for quick access */}
+      <div className="fixed bottom-24 right-4 z-30">
+        <button
+          onClick={() => setShowMembersSidebar(!showMembersSidebar)}
+          className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${
+            showMembersSidebar
+              ? 'bg-red-500 text-white scale-110'
+              : isThemeLight
+              ? 'bg-zinc-800 text-white hover:bg-zinc-700'
+              : 'bg-zinc-700 text-white hover:bg-zinc-600'
+          }`}
+        >
+          <Users className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Floating Secure Indicator Capsule (from user reference screenshot) */}
