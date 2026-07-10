@@ -766,7 +766,15 @@ export default function SecureChatRoom({
       
       // Check for environment variable first (for Cloudflare Pages deployment)
       if (import.meta.env.VITE_WS_URL) {
-        wsBaseUrl = import.meta.env.VITE_WS_URL;
+        // Convert https:// to wss:// and http:// to ws:// if needed
+        let envUrl = import.meta.env.VITE_WS_URL;
+        if (envUrl.startsWith('https://')) {
+          wsBaseUrl = envUrl.replace('https://', 'wss://');
+        } else if (envUrl.startsWith('http://')) {
+          wsBaseUrl = envUrl.replace('http://', 'ws://');
+        } else {
+          wsBaseUrl = envUrl;
+        }
         console.log('Using WebSocket URL from environment variable:', wsBaseUrl);
       } else if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
         // Local development server
