@@ -320,6 +320,8 @@ export default function SecureChatRoom({
     return newId;
   });
   const [realOnlineUsers, setRealOnlineUsers] = useState<any[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [debugInfo, setDebugInfo] = useState<string>('');
   const wsRef = useRef<WebSocket | null>(null);
 
   const [inputText, setInputText] = useState('');
@@ -799,6 +801,8 @@ export default function SecureChatRoom({
 
       socket.onopen = () => {
         console.log('WebSocket connection successfully opened!');
+        setConnectionStatus('connected');
+        setDebugInfo(`Connected to ${wsUrl}`);
         reconnectAttempts = 0; // Reset reconnection counter on successful connection
         socket.send(JSON.stringify({
           type: 'join',
@@ -817,6 +821,8 @@ export default function SecureChatRoom({
           const { type, roomId: msgRoomId, data } = payload;
 
           console.log(`[WS MESSAGE] Type: ${type}, RoomId: ${msgRoomId}, MyRoomId: ${roomId}`);
+          setDebugInfo(`Received: ${type} from ${msgRoomId}`);
+          
           if (msgRoomId !== roomId) {
             console.log(`[WS MESSAGE] Ignoring message for different room: ${msgRoomId} !== ${roomId}`);
             return;
@@ -980,6 +986,8 @@ export default function SecureChatRoom({
 
       socket.onclose = (event) => {
         console.log('WebSocket connection closed, scheduling reconnect...', event.code, event.reason);
+        setConnectionStatus('disconnected');
+        setDebugInfo(`Disconnected: ${event.code} - ${event.reason}`);
         if (!isDisposed) {
           // Exponential backoff for reconnection: 3s, 6s, 12s, max 30s
           const backoffTime = Math.min(3000 * Math.pow(2, reconnectAttempts), 30000);
@@ -991,6 +999,8 @@ export default function SecureChatRoom({
 
       socket.onerror = (err) => {
         console.error('WebSocket connection error:', err);
+        setConnectionStatus('disconnected');
+        setDebugInfo(`Connection error`);
         // Don't immediately close - let onclose handle reconnection
       };
     };
@@ -1436,6 +1446,14 @@ export default function SecureChatRoom({
             <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
               密钥: <span className={isThemeLight ? 'text-zinc-600' : 'text-zinc-400'}>{passphrase}</span>
             </p>
+            
+            {/* Debug Connection Status */}
+            <div className="flex items-center gap-1.5 mt-1">
+              <div className={`w-2 h-2 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' : connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'}`} />
+              <span className="text-[9px] font-mono text-zinc-500">
+                {connectionStatus === 'connected' ? '已连接' : connectionStatus === 'connecting' ? '连接中...' : '已断开'}
+              </span>
+            </div>
           </div>
         </div>
 
