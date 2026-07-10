@@ -954,12 +954,11 @@ export default function SecureChatRoom({
           wsBaseUrl = envUrl;
         }
         console.log('Using WebSocket URL from environment variable:', wsBaseUrl);
-      } else if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        // Local development server
+      } else if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || /^192\.168\./.test(window.location.hostname) || /^10\./.test(window.location.hostname) || window.location.hostname.startsWith('172.'))) {
+        // Local development server or LAN access
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsPort = window.location.port || '3000';
-        wsBaseUrl = `${protocol}//${window.location.hostname}:${wsPort}`;
-        console.log('Using local WebSocket server:', wsBaseUrl);
+        wsBaseUrl = `${protocol}//${window.location.host}`;
+        console.log('Using local/LAN WebSocket server:', wsBaseUrl);
       } else {
         // Fallback to Cloudflare Workers
         wsBaseUrl = "wss://nodecrypt.comeonsad.workers.dev";
