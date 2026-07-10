@@ -370,15 +370,15 @@ export default function App() {
               </div>
 
               {/* Lobby Entrance Interactive Form Card Right */}
-              <div className="md:col-span-7 order-1 md:order-2">
+              <div className="md:col-span-7 order-1 md:order-2 w-full">
                 <form
                   onSubmit={handleEnterRoom}
-                  className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-[24px] md:rounded-[32px] p-4 md:p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden space-y-3 md:space-y-5"
+                  className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-[24px] md:rounded-[32px] p-4 md:p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden space-y-3 md:space-y-5 w-full"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-red-500/10 blur-3xl rounded-full pointer-events-none" />
 
                   <div className="border-b border-zinc-800/80 pb-2 md:pb-3 flex items-center gap-2">
-                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center shrink-0">
                       <Shield className="w-4 h-4 md:w-4.5 md:h-4.5 text-red-500" />
                     </div>
                     <h3 className="font-black text-xs md:text-sm tracking-tight text-white">进入端到端加密房间大堂</h3>
@@ -450,13 +450,13 @@ export default function App() {
                   {/* 4. Avatar Preset Selection list */}
                   <div className="space-y-1.5 md:space-y-2">
                     <label className="text-[11px] md:text-xs text-zinc-100 font-extrabold block">选择用户头像 (Avatar)</label>
-                    <div className="flex gap-2 md:gap-3 justify-between items-center py-1">
+                    <div className="flex gap-2 md:gap-3 justify-between items-center py-1 flex-wrap">
                       {PRESET_AVATARS.map((av, idx) => (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => setSelectedAvatarIdx(idx)}
-                          className={`w-9 h-9 md:w-11 md:h-11 rounded-full overflow-hidden border-2 transition ${
+                          className={`w-9 h-9 md:w-11 md:h-11 rounded-full overflow-hidden border-2 transition shrink-0 ${
                             selectedAvatarIdx === idx
                               ? 'border-red-500 scale-105 md:scale-110 shadow-lg shadow-red-500/25'
                               : 'border-zinc-800 opacity-70 hover:opacity-100 hover:border-zinc-600'
@@ -471,10 +471,10 @@ export default function App() {
                   {/* Enter Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 md:py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 active:scale-[0.99] transition rounded-lg md:rounded-xl font-black text-[12px] md:text-sm tracking-wide shadow-xl shadow-red-500/15 text-white flex items-center justify-center gap-2"
+                    className="w-full py-3 md:py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 active:scale-[0.99] transition rounded-lg md:rounded-xl font-black text-[12px] md:text-sm tracking-wide shadow-xl shadow-red-500/15 text-white flex items-center justify-center gap-2 relative z-10"
                   >
-                    <Lock className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    <span>初始化并连接零知识 E2EE 房间</span>
+                    <Lock className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+                    <span className="text-center">初始化并连接零知识 E2EE 房间</span>
                   </button>
                 </form>
               </div>
