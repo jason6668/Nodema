@@ -58,6 +58,7 @@ interface SecureChatRoomProps {
   onUpdateProfile?: (nickname: string, avatarUrl: string) => void;
   activeThemeId: string;
   setActiveThemeId: (themeId: string) => void;
+  usePolling?: boolean; // Force HTTP polling instead of WebSocket
 }
 
 const PRESET_AVATARS = [
@@ -954,15 +955,15 @@ export default function SecureChatRoom({
           wsBaseUrl = envUrl;
         }
         console.log('Using WebSocket URL from environment variable:', wsBaseUrl);
-      } else if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || /^192\.168\./.test(window.location.hostname) || /^10\./.test(window.location.hostname) || window.location.hostname.startsWith('172.'))) {
-        // Local development server or LAN access
+      } else if (typeof window !== 'undefined') {
+        // Force local/LAN connection only
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         wsBaseUrl = `${protocol}//${window.location.host}`;
         console.log('Using local/LAN WebSocket server:', wsBaseUrl);
       } else {
-        // Fallback to Cloudflare Workers
-        wsBaseUrl = "wss://nodecrypt.comeonsad.workers.dev";
-        console.log('Using fallback Cloudflare Workers URL:', wsBaseUrl);
+        // Default fallback
+        wsBaseUrl = "ws://localhost:3000";
+        console.log('Using default local WebSocket server:', wsBaseUrl);
       }
 
       // IMPORTANT:
