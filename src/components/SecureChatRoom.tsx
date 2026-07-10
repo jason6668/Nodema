@@ -761,14 +761,23 @@ export default function SecureChatRoom({
       if (isDisposed) return;
 
       // Support split deployment: static frontend + separate WS backend
-      // Use local server in development, Cloudflare Workers in production
+      // Priority: 1. Environment variable VITE_WS_URL, 2. Local server in dev, 3. Cloudflare Workers
       let wsBaseUrl: string;
-      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      
+      // Check for environment variable first (for Cloudflare Pages deployment)
+      if (import.meta.env.VITE_WS_URL) {
+        wsBaseUrl = import.meta.env.VITE_WS_URL;
+        console.log('Using WebSocket URL from environment variable:', wsBaseUrl);
+      } else if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        // Local development server
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsPort = window.location.port || '3000';
         wsBaseUrl = `${protocol}//${window.location.hostname}:${wsPort}`;
+        console.log('Using local WebSocket server:', wsBaseUrl);
       } else {
+        // Fallback to Cloudflare Workers
         wsBaseUrl = "wss://nodecrypt.comeonsad.workers.dev";
+        console.log('Using fallback Cloudflare Workers URL:', wsBaseUrl);
       }
 
       // IMPORTANT:

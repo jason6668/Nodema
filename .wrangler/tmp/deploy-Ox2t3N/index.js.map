@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../../../worker/index.ts"],
+  "sourceRoot": "C:\\Users\\Jason\\Downloads\\\u9A6C\u8001\u5E08nodecrypt\\.wrangler\\tmp\\deploy-Ox2t3N",
+  "sourcesContent": ["import { RoomDurableObject } from \"./room-durable-object\";\n\nexport interface Env {\n  ROOM_DURABLE_OBJECT: DurableObjectNamespace;\n}\n\nexport default {\n  async fetch(request: Request, env: Env): Promise<Response> {\n    const url = new URL(request.url);\n    const path = url.pathname;\n\n    // Route to Durable Object based on room ID for WebSocket connections\n    if (path.startsWith('/ws/')) {\n      const roomId = path.split('/')[2];\n      if (!roomId) {\n        return new Response('Room ID required', { status: 400 });\n      }\n\n      const id = env.ROOM_DURABLE_OBJECT.idFromName(roomId);\n      const stub = env.ROOM_DURABLE_OBJECT.get(id);\n      \n      return stub.fetch(request);\n    }\n\n    // Health check endpoint\n    if (path === '/api/health') {\n      return Response.json({ status: \"ok\", service: \"Cloudflare Workers WebSocket\" });\n    }\n\n    // Serve static files for Pages\n    return new Response('NodeCrypt WebSocket Server on Cloudflare Workers', { status: 200 });\n  }\n};\n"],
+  "mappings": ";AAMA,IAAO,gBAAQ;AAAA,EACb,MAAM,MAAM,SAAkB,KAA6B;AACzD,UAAM,MAAM,IAAI,IAAI,QAAQ,GAAG;AAC/B,UAAM,OAAO,IAAI;AAGjB,QAAI,KAAK,WAAW,MAAM,GAAG;AAC3B,YAAM,SAAS,KAAK,MAAM,GAAG,EAAE,CAAC;AAChC,UAAI,CAAC,QAAQ;AACX,eAAO,IAAI,SAAS,oBAAoB,EAAE,QAAQ,IAAI,CAAC;AAAA,MACzD;AAEA,YAAM,KAAK,IAAI,oBAAoB,WAAW,MAAM;AACpD,YAAM,OAAO,IAAI,oBAAoB,IAAI,EAAE;AAE3C,aAAO,KAAK,MAAM,OAAO;AAAA,IAC3B;AAGA,QAAI,SAAS,eAAe;AAC1B,aAAO,SAAS,KAAK,EAAE,QAAQ,MAAM,SAAS,+BAA+B,CAAC;AAAA,IAChF;AAGA,WAAO,IAAI,SAAS,oDAAoD,EAAE,QAAQ,IAAI,CAAC;AAAA,EACzF;AACF;",
+  "names": []
+}
