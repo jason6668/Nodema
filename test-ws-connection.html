@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Connection Test</title>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    <div>
+        <label>Room ID:</label>
+        <input type="text" id="roomId" value="Room-888">
+    </div>
+    <div>
+        <label>User ID:</label>
+        <input type="text" id="userId" value="test-user-123">
+    </div>
+    <div>
+        <label>Nickname:</label>
+        <input type="text" id="nickname" value="Test User">
+    </div>
+    <button onclick="connect()">Connect</button>
+    <button onclick="sendTestMessage()">Send Test Message</button>
+    <button onclick="disconnect()">Disconnect</button>
+    
+    <div id="status">Status: Disconnected</div>
+    <div id="logs"></div>
+
+    <script>
+        let ws = null;
+        const roomId = document.getElementById('roomId').value;
+        const userId = document.getElementById('userId').value;
+        const nickname = document.getElementById('nickname').value;
+
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(p);
+            console.log(message);
+        }
+
+        function connect() {
+            const wsUrl = `wss://mi.8818618.xyz/ws/${encodeURIComponent(roomId)}`;
+            log(`Connecting to: ${wsUrl}`);
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                log('WebSocket connected!');
+                document.getElementById('status').textContent = 'Status: Connected';
+                
+                // Send join message
+                ws.send(JSON.stringify({
+                    type: 'join',
+                    roomId,
+                    userId,
+                    data: {
+                        nickname,
+                        avatarUrl: ''
+                    }
+                }));
+                log('Sent join message');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log(`Received message: ${data.type}`);
+                console.log('Message data:', data);
+            };
+            
+            ws.onclose = (event) => {
+                log(`WebSocket closed: ${event.code} - ${event.reason}`);
+                document.getElementById('status').textContent = 'Status: Disconnected';
+            };
+            
+            ws.onerror = (error) => {
+                log('WebSocket error!');
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function sendTestMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('WebSocket not connected!');
+                return;
+            }
+            
+            const message = {
+                id: `msg-${Date.now()}`,
+                userId,
+                userName: nickname,
+                avatar: '',
+                content: 'Test message from WebSocket test',
+                type: 'text',
+                reactions: []
+            };
+            
+            ws.send(JSON.stringify({
+                type: 'message',
+                roomId,
+                userId,
+                data: { message }
+            }));
+            log('Sent test message');
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                log('Disconnected');
+            }
+        }
+    </script>
+</body>
+</html>
