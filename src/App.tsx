@@ -528,16 +528,87 @@ export default function App() {
                     activeTab === 'both' ? 'hidden lg:flex lg:col-span-5' : activeTab === 'live' ? 'flex lg:col-span-12' : 'hidden'
                   } w-full justify-center`}
                 >
-                  <div className="relative w-full max-w-md mx-auto">
-                    {/* Smartphone Case Frame Decoration */}
-                    <div className="relative bg-[#0F111A] rounded-[24px] md:rounded-[42px] p-2 md:p-3.5 shadow-2xl border-3 md:border-4 border-zinc-800/80 ring-1 ring-zinc-700/50 overflow-hidden">
+                  <div className="relative w-full max-w-md mx-auto lg:max-w-full">
+                    {/* Mobile: Full screen live page without phone frame */}
+                    <div className="lg:hidden w-full h-[calc(100dvh-8rem)] bg-zinc-950 overflow-hidden">
+                      <AnimatePresence mode="wait">
+                        {showCreationStudio && !activeRoomSettings ? (
+                          <motion.div
+                            key="creation-studio"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="h-full"
+                          >
+                            <CreationStudio
+                              onStart={handleStartLive}
+                              onClose={() => setShowCreationStudio(false)}
+                            />
+                          </motion.div>
+                        ) : activeRoomSettings ? (
+                          <motion.div
+                            key="active-live-room"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="h-full"
+                          >
+                            <LiveRoom
+                              settings={activeRoomSettings}
+                              onClose={handleCloseLive}
+                              nickname={nickname}
+                              avatarUrl={customAvatarUrl || PRESET_AVATARS[selectedAvatarIdx]}
+                            />
+                          </motion.div>
+                        ) : (
+                          /* Live stream inactive placeholder screen - mobile full screen */
+                          <motion.div
+                            key="live-inactive-placeholder"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="h-full flex flex-col justify-between p-6 bg-gradient-to-b from-zinc-900 via-[#0A0C10] to-zinc-950 text-center"
+                          >
+                            <div className="my-auto space-y-6">
+                              <div className="mx-auto w-20 h-20 rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center shadow-lg text-zinc-500">
+                                <Radio className="w-10 h-10 text-zinc-600" />
+                              </div>
+
+                              <div className="space-y-3">
+                                <h4 className="font-extrabold text-lg text-zinc-200">直播间处于空闲状态</h4>
+                                <p className="text-base text-zinc-500 leading-relaxed px-4">
+                                  当前加密房内未开启直播。任何人都可以开启直播，邀请房间里的伙伴加入，开启语音/视频互动。
+                                </p>
+                              </div>
+
+                              <button
+                                onClick={() => {
+                                  setShowCreationStudio(true);
+                                  setActiveTab('both');
+                                }}
+                                className="px-8 py-4 bg-gradient-to-r from-[#FF2442] to-[#FF4E69] text-white font-extrabold text-base rounded-xl shadow-lg shadow-red-500/10 hover:brightness-105 transition"
+                              >
+                                开启加密直播
+                              </button>
+                            </div>
+
+                            <div className="border-t border-zinc-900 pt-4 text-xs text-zinc-600 font-mono">
+                              RED LIVE STREAM WRAPPER • OFFLINE
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Desktop: Phone frame decoration */}
+                    <div className="hidden lg:block relative bg-[#0F111A] rounded-[42px] p-3.5 shadow-2xl border-4 border-zinc-800/80 ring-1 ring-zinc-700/50 overflow-hidden">
                       {/* Speaker Hole */}
-                      <div className="absolute top-3 md:top-6 left-1/2 -translate-x-1/2 w-14 md:w-20 h-2.5 md:h-4 bg-black rounded-full z-50 flex items-center justify-center">
-                        <div className="w-1.5 md:w-2 h-1.5 md:h-2 rounded-full bg-zinc-800/80 ml-1.5 md:ml-2" />
+                      <div className="absolute top-6 left-1/2 -translate-x-1/2 w-20 h-4 bg-black rounded-full z-50 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-zinc-800/80 ml-2" />
                       </div>
 
                       {/* Content inside the smartphone wrapper */}
-                      <div className="rounded-[20px] md:rounded-[30px] overflow-hidden bg-zinc-950 relative h-[450px] md:h-[800px]">
+                      <div className="rounded-[30px] overflow-hidden bg-zinc-950 relative h-[800px]">
                         <AnimatePresence mode="wait">
                           {showCreationStudio && !activeRoomSettings ? (
                             <motion.div
@@ -574,16 +645,16 @@ export default function App() {
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
                               exit={{ opacity: 0 }}
-                              className="h-full flex flex-col justify-between p-4 md:p-6 bg-gradient-to-b from-zinc-900 via-[#0A0C10] to-zinc-950 text-center"
+                              className="h-full flex flex-col justify-between p-6 bg-gradient-to-b from-zinc-900 via-[#0A0C10] to-zinc-950 text-center"
                             >
-                              <div className="my-auto space-y-4 md:space-y-6">
-                                <div className="mx-auto w-14 h-14 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center shadow-lg text-zinc-500">
-                                  <Radio className="w-7 h-7 md:w-8 md:h-8 text-zinc-600" />
+                              <div className="my-auto space-y-6">
+                                <div className="mx-auto w-16 h-16 rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center shadow-lg text-zinc-500">
+                                  <Radio className="w-8 h-8 text-zinc-600" />
                                 </div>
 
-                                <div className="space-y-2 md:space-y-2">
-                                  <h4 className="font-extrabold text-base md:text-base text-zinc-200">直播间处于空闲状态</h4>
-                                  <p className="text-sm md:text-xs text-zinc-500 leading-relaxed px-2 md:px-4">
+                                <div className="space-y-2">
+                                  <h4 className="font-extrabold text-base text-zinc-200">直播间处于空闲状态</h4>
+                                  <p className="text-xs text-zinc-500 leading-relaxed px-4">
                                     当前加密房内未开启直播。任何人都可以开启直播，邀请房间里的伙伴加入，开启语音/视频互动。
                                   </p>
                                 </div>
@@ -593,13 +664,13 @@ export default function App() {
                                     setShowCreationStudio(true);
                                     setActiveTab('both');
                                   }}
-                                  className="px-6 md:px-6 py-3 md:py-3 bg-gradient-to-r from-[#FF2442] to-[#FF4E69] text-white font-extrabold text-sm md:text-xs rounded-xl md:rounded-xl shadow-lg shadow-red-500/10 hover:brightness-105 transition"
+                                  className="px-6 py-3 bg-gradient-to-r from-[#FF2442] to-[#FF4E69] text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-500/10 hover:brightness-105 transition"
                                 >
                                   开启加密直播
                                 </button>
                               </div>
 
-                              <div className="border-t border-zinc-900 pt-3 md:pt-4 text-[10px] md:text-[10px] text-zinc-600 font-mono">
+                              <div className="border-t border-zinc-900 pt-4 text-[10px] text-zinc-600 font-mono">
                                 RED LIVE STREAM WRAPPER • OFFLINE
                               </div>
                             </motion.div>
