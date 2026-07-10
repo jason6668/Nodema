@@ -749,6 +749,7 @@ export default function SecureChatRoom({
   useEffect(() => {
     let reconnectTimeout: any;
     let isDisposed = false;
+    let reconnectAttempts = 0;
 
     const welcomeContent = lang === 'en' 
       ? `Successfully entered Zero-Knowledge E2EE room: "${roomId}". All messages are encrypted locally using AES-GCM-256 with key "${'*'.repeat(passphrase.length)}". True zero-knowledge security.`
@@ -760,7 +761,15 @@ export default function SecureChatRoom({
       if (isDisposed) return;
 
       // Support split deployment: static frontend + separate WS backend
-      const wsBaseUrl = "wss://nodecrypt.comeonsad.workers.dev";
+      // Use local server in development, Cloudflare Workers in production
+      let wsBaseUrl: string;
+      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsPort = window.location.port || '3000';
+        wsBaseUrl = `${protocol}//${window.location.hostname}:${wsPort}`;
+      } else {
+        wsBaseUrl = "wss://nodecrypt.comeonsad.workers.dev";
+      }
 
       // IMPORTANT:
       // We connect to `/ws/:roomId` so Cloudflare Durable Object can route connections by room.
@@ -773,6 +782,7 @@ export default function SecureChatRoom({
 
       socket.onopen = () => {
         console.log('WebSocket connection successfully opened!');
+        reconnectAttempts = 0; // Reset reconnection counter on successful connection
         socket.send(JSON.stringify({
           type: 'join',
           roomId,
@@ -951,16 +961,20 @@ export default function SecureChatRoom({
         }
       };
 
-      socket.onclose = () => {
-        console.log('WebSocket connection closed, scheduling reconnect...');
+      socket.onclose = (event) => {
+        console.log('WebSocket connection closed, scheduling reconnect...', event.code, event.reason);
         if (!isDisposed) {
-          reconnectTimeout = setTimeout(connectWs, 3000);
+          // Exponential backoff for reconnection: 3s, 6s, 12s, max 30s
+          const backoffTime = Math.min(3000 * Math.pow(2, reconnectAttempts), 30000);
+          reconnectAttempts++;
+          console.log(`Reconnecting in ${backoffTime}ms (attempt ${reconnectAttempts})`);
+          reconnectTimeout = setTimeout(connectWs, backoffTime);
         }
       };
 
       socket.onerror = (err) => {
         console.error('WebSocket connection error:', err);
-        socket.close();
+        // Don't immediately close - let onclose handle reconnection
       };
     };
 
