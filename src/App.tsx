@@ -340,8 +340,8 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.96 }}
               className="max-w-4xl w-full mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-center py-4 md:py-6"
             >
-              {/* Informational Hero Casing Left */}
-              <div className="md:col-span-5 space-y-4 md:space-y-6 order-2 md:order-1">
+              {/* Informational Hero Casing Left - Hide on mobile */}
+              <div className="hidden md:block md:col-span-5 space-y-4 md:space-y-6 order-2 md:order-1">
                 <div className="space-y-2 md:space-y-3">
                   <span className="text-[9px] md:text-[10px] text-red-400 font-extrabold uppercase bg-red-500/10 px-2 md:px-2.5 py-0.6 md:py-0.8 rounded-md border border-red-500/20 inline-block tracking-widest">
                     安全通讯沙盒
@@ -369,11 +369,11 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Lobby Entrance Interactive Form Card Right */}
+              {/* Lobby Entrance Interactive Form Card Right - Full width on mobile */}
               <div className="md:col-span-7 order-1 md:order-2 w-full">
                 <form
                   onSubmit={handleEnterRoom}
-                  className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-[24px] md:rounded-[32px] p-4 md:p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden space-y-3 md:space-y-5 w-full"
+                  className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-[24px] md:rounded-[32px] p-4 md:p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden space-y-4 md:space-y-5 w-full"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-red-500/10 blur-3xl rounded-full pointer-events-none" />
 
@@ -391,7 +391,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={handleRandomRoom}
-                        className="text-red-400 hover:text-red-300 font-extrabold text-[9px] md:text-[10px]"
+                        className="text-red-400 hover:text-red-300 font-extrabold text-[9px] md:text-[10px] shrink-0"
                       >
                         随机生成
                       </button>
@@ -412,7 +412,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={handleRandomKey}
-                        className="text-red-400 hover:text-red-300 font-extrabold text-[9px] md:text-[10px]"
+                        className="text-red-400 hover:text-red-300 font-extrabold text-[9px] md:text-[10px] shrink-0"
                       >
                         生成安全密钥
                       </button>
@@ -428,7 +428,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setShowPassphrase(!showPassphrase)}
-                        className="absolute right-3 md:right-3.5 top-2.5 md:top-3 text-zinc-400 hover:text-white transition"
+                        className="absolute right-3 md:right-3.5 top-2.5 md:top-3 text-zinc-400 hover:text-white transition shrink-0"
                       >
                         {showPassphrase ? <EyeOff className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Eye className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                       </button>
@@ -471,9 +471,9 @@ export default function App() {
                   {/* Enter Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 md:py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 active:scale-[0.99] transition rounded-lg md:rounded-xl font-black text-[12px] md:text-sm tracking-wide shadow-xl shadow-red-500/15 text-white flex items-center justify-center gap-2 relative z-10"
+                    className="w-full py-4 md:py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 active:scale-[0.99] transition rounded-lg md:rounded-xl font-black text-[14px] md:text-sm tracking-wide shadow-xl shadow-red-500/15 text-white flex items-center justify-center gap-2 relative z-10 mt-6"
                   >
-                    <Lock className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+                    <Lock className="w-4 h-4 md:w-4 md:h-4 shrink-0" />
                     <span className="text-center">初始化并连接零知识 E2EE 房间</span>
                   </button>
                 </form>
@@ -490,6 +490,33 @@ export default function App() {
             >
               {/* DUAL COLUMN SPLIT SCREEN LAYOUT */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start w-full">
+                {/* 2. RIGHT PANEL: SECURE CHAT ROOM INTERFACE */}
+                {/* Rendered on Desktop 'both' split layout, or when 'chat' tab is active */}
+                <div
+                  className={`${
+                    activeTab === 'both' ? 'hidden lg:flex lg:col-span-7' : activeTab === 'chat' ? 'flex lg:col-span-12' : 'hidden'
+                  } w-full`}
+                >
+                  <SecureChatRoom
+                    roomId={roomId}
+                    passphrase={passphrase}
+                    nickname={nickname}
+                    avatarUrl={customAvatarUrl || PRESET_AVATARS[selectedAvatarIdx]}
+                    activeThemeId={activeThemeId}
+                    setActiveThemeId={setActiveThemeId}
+                    onLeave={handleLeaveRoom}
+                    onGoLive={(settings) => {
+                      setActiveRoomSettings(settings);
+                      setIsLiveActive(true);
+                      setActiveTab('both');
+                    }}
+                    isLiveActive={isLiveActive}
+                    onJoinLive={() => {
+                      setActiveTab('both');
+                    }}
+                    onUpdateProfile={handleUpdateProfile}
+                  />
+                </div>
 
                 {/* 1. LEFT PANEL: THE SMARTPHONE LIVE STREAM SCREEN */}
                 {/* Rendered on Desktop 'both' split layout, or when 'live' tab is active */}
@@ -579,35 +606,6 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-
-                {/* 2. RIGHT PANEL: THE NODECRYPT SECURE E2EE CHATROOM */}
-                {/* Rendered on Desktop 'both' split layout, or when 'chat' tab is active */}
-                <div
-                  className={`${
-                    activeTab === 'both' ? 'col-span-12 lg:col-span-7' : activeTab === 'chat' ? 'col-span-12 lg:col-span-12' : 'hidden lg:block lg:col-span-7'
-                  } w-full`}
-                >
-                  <SecureChatRoom
-                    roomId={roomId}
-                    passphrase={passphrase}
-                    nickname={nickname}
-                    avatarUrl={customAvatarUrl || PRESET_AVATARS[selectedAvatarIdx]}
-                    onLeave={handleLeaveRoom}
-                    onGoLive={(settings) => {
-                      setActiveRoomSettings(settings);
-                      setIsLiveActive(true);
-                      setActiveTab('both');
-                    }}
-                    isLiveActive={isLiveActive}
-                    onJoinLive={() => {
-                      setActiveTab('both');
-                    }}
-                    onUpdateProfile={handleUpdateProfile}
-                    activeThemeId={activeThemeId}
-                    setActiveThemeId={setActiveThemeId}
-                  />
-                </div>
-
               </div>
             </motion.div>
           )}
