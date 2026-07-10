@@ -351,7 +351,7 @@ export default function App() {
               <div className="md:col-span-7 order-1 md:order-2 w-full">
                 <form
                   onSubmit={handleEnterRoom}
-                  className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-[20px] md:rounded-[32px] p-4 md:p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden space-y-4 md:space-y-5 w-full"
+                  className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-[20px] md:rounded-[32px] p-4 md:p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative space-y-4 md:space-y-5 w-full"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-red-500/10 blur-3xl rounded-full pointer-events-none" />
 
@@ -449,7 +449,7 @@ export default function App() {
                   {/* Enter Button */}
                   <button
                     type="submit"
-                    className="w-full py-3.5 md:py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 active:scale-[0.99] transition rounded-xl md:rounded-xl font-black text-base md:text-sm tracking-wide shadow-xl shadow-red-500/15 text-white flex items-center justify-center gap-2 relative z-10 mt-4"
+                    className="w-full py-3.5 md:py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 active:scale-[0.99] transition rounded-xl md:rounded-xl font-black text-base md:text-sm tracking-wide shadow-xl shadow-red-500/15 text-white flex items-center justify-center gap-2 relative z-20 mt-4"
                   >
                     <Lock className="w-5 h-5 md:w-4 md:h-4 shrink-0" />
                     <span className="text-center">初始化并连接零知识 E2EE 房间</span>
