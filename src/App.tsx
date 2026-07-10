@@ -47,7 +47,7 @@ const PRESET_AVATARS = [
 export default function App() {
   // Navigation and State Routing
   const [inRoom, setInRoom] = useState(false);
-  const [activeTab, setActiveTab] = useState<'both' | 'chat' | 'live'>('both');
+  const [activeTab, setActiveTab] = useState<'chat'>('chat');
 
   // NodeCrypt Secure User Details
   const [roomId, setRoomId] = useState('Room-888');

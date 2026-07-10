@@ -281,13 +281,6 @@ const EMOJIS_BY_CATEGORY: Record<string, { char: string; label: string }[]> = {
   ]
 };
 
-// Presets for simulated other users' secure messages
-const PEER_USERS = [
-  { name: '暗影行者', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop' },
-  { name: '极客小艾', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop' },
-  { name: '零知识安全官', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100&auto=format&fit=crop' }
-];
-
 export default function SecureChatRoom({
   roomId,
   passphrase,
@@ -336,7 +329,7 @@ export default function SecureChatRoom({
   const [isCallMuted, setIsCallMuted] = useState(false);
   const [isCallCameraOff, setIsCallCameraOff] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [activeCallPeer, setActiveCallPeer] = useState<{ name: string; avatar: string }>(PEER_USERS[0]);
+  const [activeCallPeer, setActiveCallPeer] = useState<{ name: string; avatar: string } | null>(null);
 
   const callTimerRef = useRef<any>(null);
   const ringtoneIntervalRef = useRef<any>(null);
@@ -549,9 +542,14 @@ export default function SecureChatRoom({
     setIsCallMuted(false);
     setIsCallCameraOff(false);
 
-    // Pick a random peer to call
-    const randomPeer = PEER_USERS[Math.floor(Math.random() * PEER_USERS.length)];
-    setActiveCallPeer(randomPeer);
+    // Pick a random real peer to call
+    const realPeers = realOnlineUsers.filter((u) => u.id !== myUserId);
+    if (realPeers.length === 0) {
+      alert('没有其他在线用户可通话');
+      return;
+    }
+    const randomPeer = realPeers[Math.floor(Math.random() * realPeers.length)];
+    setActiveCallPeer({ name: randomPeer.nickname, avatar: randomPeer.avatarUrl });
 
     // Play ringing loop sound
     playRingingSound();
@@ -919,24 +917,6 @@ export default function SecureChatRoom({
                   }
                 ]);
 
-                // Simulate other users saying something ONLY if we are alone in the room
-                if (data.users && data.users.length <= 1) {
-                  setTimeout(() => {
-                    receivePeerMessage(
-                      PEER_USERS[0].name,
-                      PEER_USERS[0].avatar,
-                      lang === 'en' ? 'Hello! Long time no see. This room is fully secure!' : lang === 'es' ? '¡Hola! Qué bueno verte de nuevo por aquí.' : '哈喽！好久不见。这个房间用了 马老师NodeCrypt 的底层安全逻辑，消息连管理员都看不到。'
-                    );
-                  }, 3000);
-
-                  setTimeout(() => {
-                    receivePeerMessage(
-                      PEER_USERS[1].name,
-                      PEER_USERS[1].avatar,
-                      lang === 'en' ? 'Yes, the host is about to start a live stream with voice and video interactive co-hosting soon!' : lang === 'es' ? 'Sí, ¡y el anfitrión va a transmitir en vivo muy pronto!' : '是的，听说等下主播要在房间里开启加密语音连麦直播间，我们可以申请上麦一边加密聊天一边语音互动！'
-                    );
-                  }, 7000);
-                }
               }
               break;
             }
@@ -1314,61 +1294,6 @@ export default function SecureChatRoom({
       } else {
         console.error(`[SEND MESSAGE] WebSocket not ready. State: ${wsRef.current?.readyState}, OPEN: ${WebSocket.OPEN}`);
       }
-
-      // Simulate Private Peer Reply
-      if (privatePeerName && PEER_USERS.some(p => p.name === privatePeerName)) {
-        setTimeout(async () => {
-          const peerReplies: Record<string, string[]> = {
-            '极客小艾': [
-              `[🔒 1对1密讯] 哈喽！我已通过 马老师NodeCrypt 底层安全管道与你建立了独立 E2EE 信道。其他人均无法看到这条消息。`,
-              `[🔒 1对1密讯] 握手密钥验证成功。今天的安全级别已经调配到最高等级。`,
-              `[🔒 1对1密讯] 收到，我们说的事情可以在这里放心沟通。你也可以设置消息自毁时间 💣。`
-            ],
-            '暗影行者': [
-              `[🔒 1对1密讯] 收到，暗影守护防线已建立。本条对话通过了本地高熵对称密钥加密。`,
-              `[🔒 1对1密讯] 1对1密讯状态确认：本地信道指纹无误。外界中继服务器仅保留密文包。`,
-              `[🔒 1对1密讯] 没问题。防分析护盾已启动，该段密讯只驻留在各自的浏览器沙盒内存中。`
-            ],
-            '零知识安全官': [
-              `[🔒 1对1密讯] E2EE 零知识验证官已上线，已为你加密并确认了私有信道。`,
-              `[🔒 1对1密讯] 安全日志更新：私有端对端握手延迟 12ms。信道防泄漏指数：100%。`
-            ]
-          };
-
-          const replies = peerReplies[privatePeerName] || [
-            `[🔒 1对1密讯] 收到！私聊信道已通过安全握手激活。`
-          ];
-          const randomReply = replies[Math.floor(Math.random() * replies.length)];
-          const encryptedReply = await encryptText(randomReply, passphrase);
-          const peerObj = PEER_USERS.find(p => p.name === privatePeerName);
-
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `msg-private-reply-${Date.now()}`,
-              userId: `peer-${privatePeerName}`,
-              userName: privatePeerName,
-              avatar: peerObj ? peerObj.avatar : '',
-              content: randomReply,
-              encryptedContent: encryptedReply,
-              type: 'text',
-              isPrivate: true,
-              privateTo: nickname,
-              reactions: []
-            }
-          ]);
-          playNotificationSound();
-        }, 1500);
-      } else if (payloadText.includes('直播') || payloadText.includes('开播')) {
-        // Simulate a responsive follow up comment sometimes
-        setTimeout(() => {
-          receivePeerMessage(
-            PEER_USERS[2].name,
-            PEER_USERS[2].avatar,
-            '哇，那我们现在点击顶部的直播大厅，一起去连麦看看！'
-          );
-        }, 1500);
-      }
     } catch (err) {
       alert('加密失败，请核对密钥设置。');
     }
@@ -1450,7 +1375,7 @@ export default function SecureChatRoom({
         isDesktopLayout
           ? (showSettingsSidebar || showMembersSidebar ? 'max-w-6xl' : 'max-w-2xl')
           : 'max-w-full'
-      } mx-auto h-[calc(100dvh-1rem)] md:h-[850px] flex flex-col rounded-2xl md:rounded-3xl border ${isThemeLight ? 'border-zinc-200 text-zinc-800' : 'border-zinc-800/80 text-slate-200'} overflow-hidden relative transition-all duration-300 shadow-2xl ${
+      } mx-auto h-[calc(100dvh-2rem)] md:h-[850px] flex flex-col rounded-2xl md:rounded-3xl border ${isThemeLight ? 'border-zinc-200 text-zinc-800' : 'border-zinc-800/80 text-slate-200'} overflow-hidden relative transition-all duration-300 shadow-2xl ${
         enableBlurOnInactive && !isWindowFocused ? 'blur-md brightness-50 scale-[0.99] pointer-events-none' : ''
       } ${THEMES.find(t => t.id === activeThemeId)?.bgClass || 'bg-[#07090E]'}`}
     >
@@ -2856,7 +2781,7 @@ export default function SecureChatRoom({
               <div className={`p-4 border-b ${isThemeLight ? 'border-zinc-200' : 'border-zinc-800/80'} flex items-center justify-between`}>
                 <span className={`font-extrabold text-xs flex items-center gap-1.5 uppercase tracking-wide ${isThemeLight ? 'text-zinc-700' : 'text-zinc-300'}`}>
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>{t.onlineUsers} ({PEER_USERS.length + 1})</span>
+                  <span>{t.onlineUsers} ({realOnlineUsers.length})</span>
                 </span>
                 <button
                   onClick={() => setShowMembersSidebar(false)}
@@ -2932,50 +2857,6 @@ export default function SecureChatRoom({
                       </div>
                     </div>
                   ))}
-
-                  {/* AI Bot Peers */}
-                  {PEER_USERS.map((peer, i) => (
-                    <div
-                      key={i}
-                      className={`p-2 rounded-xl flex items-center justify-between group transition duration-150 ${
-                        isThemeLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-900/60'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <img src={peer.avatar} alt={peer.name} className={`w-8 h-8 rounded-full object-cover border ${isThemeLight ? 'border-zinc-200' : 'border-zinc-800'}`} />
-                        <div className="min-w-0">
-                          <p className={`text-xs font-bold truncate ${isThemeLight ? 'text-zinc-800' : 'text-zinc-200'}`}>{peer.name}</p>
-                          <span className="text-[8px] text-zinc-500 font-bold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            E2EE Active
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Member Action Buttons */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => {
-                            setPrivatePeerName(peer.name);
-                            setIsShowingPrivateOnly(true);
-                          }}
-                          className="px-1.5 py-1 bg-indigo-500/15 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-lg text-[9px] font-black transition active:scale-95"
-                          title={`与 ${peer.name} 进行 1对1 加密私聊`}
-                        >
-                          私聊
-                        </button>
-                        <button
-                          onClick={() => {
-                            alert(`${lang === 'zh' ? '已向' : 'Sent invite to'} ${peer.name} ${lang === 'zh' ? '发起连麦请求，等待对端同意...' : 'inviting them to co-host... Please wait.'}`);
-                          }}
-                          className="hidden group-hover:block px-1.5 py-1 bg-red-500/15 hover:bg-red-500 text-red-300 hover:text-white rounded-lg text-[9px] font-black transition active:scale-95"
-                        >
-                          {lang === 'zh' ? '连麦' : 'Invite'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
                 {/* Security footer stamp */}
                 <div className="p-3 bg-zinc-900/30 border border-zinc-800/40 rounded-2xl text-[9px] text-zinc-500 leading-relaxed italic">
