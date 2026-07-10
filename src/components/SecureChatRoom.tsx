@@ -2808,7 +2808,7 @@ export default function SecureChatRoom({
                 {/* 2. Peer Users */}
                 <div className="space-y-1.5">
                   <span className={`text-[9px] font-black uppercase tracking-wider px-1 ${isThemeLight ? 'text-zinc-400' : 'text-zinc-500'}`}>{t.onlineUsers}</span>
-                  
+
                   {/* Real Online Users */}
                   {realOnlineUsers.filter((u) => u.id !== myUserId).map((user) => (
                     <div
@@ -2857,6 +2857,7 @@ export default function SecureChatRoom({
                       </div>
                     </div>
                   ))}
+                </div>
 
                 {/* Security footer stamp */}
                 <div className="p-3 bg-zinc-900/30 border border-zinc-800/40 rounded-2xl text-[9px] text-zinc-500 leading-relaxed italic">
