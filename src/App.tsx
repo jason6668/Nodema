@@ -252,9 +252,9 @@ export default function App() {
 
         {/* Tab switcher shown ONLY when in secure room to help switch views on mobile */}
         {inRoom && (
-          <div className={`flex items-center p-1 rounded-full gap-1 shadow-inner ${
-            isThemeLight 
-              ? 'bg-zinc-100 border border-zinc-200' 
+          <div className={`flex items-center p-1.5 rounded-full gap-1.5 shadow-inner ${
+            isThemeLight
+              ? 'bg-zinc-100 border border-zinc-200'
               : 'bg-zinc-900/60 border border-zinc-800/60'
           }`}>
             <button
@@ -268,13 +268,13 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveTab('chat')}
-              className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[11px] md:text-xs font-bold transition flex items-center gap-1 md:gap-1.5 ${
+              className={`px-4 md:px-4 py-2 md:py-1.5 rounded-full text-sm md:text-xs font-bold transition flex items-center gap-1.5 md:gap-1.5 ${
                 activeTab === 'chat' || (activeTab === 'both' && !isLiveActive)
                   ? 'bg-zinc-800 text-white'
                   : isThemeLight ? 'text-zinc-600 hover:text-zinc-950' : 'text-zinc-400 hover:text-white'
               }`}
             >
-              <LockKeyhole className="w-3 h-3 md:w-3.5 md:h-3.5" />
+              <LockKeyhole className="w-4 h-4 md:w-3.5 md:h-3.5" />
               <span className="hidden sm:inline">密讯聊天</span>
               <span className="sm:hidden">聊天</span>
             </button>
@@ -285,11 +285,11 @@ export default function App() {
                 }
                 setActiveTab('live');
               }}
-              className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[11px] md:text-xs font-bold transition flex items-center gap-1 md:gap-1.5 ${
+              className={`px-4 md:px-4 py-2 md:py-1.5 rounded-full text-sm md:text-xs font-bold transition flex items-center gap-1.5 md:gap-1.5 ${
                 activeTab === 'live' ? 'bg-[#FF2442] text-white animate-pulse' : isThemeLight ? 'text-zinc-600 hover:text-zinc-950' : 'text-zinc-400 hover:text-white'
               }`}
             >
-              <Tv className="w-3 h-3 md:w-3.5 md:h-3.5" />
+              <Tv className="w-4 h-4 md:w-3.5 md:h-3.5" />
               <span className="hidden sm:inline">直播功能</span>
               <span className="sm:hidden">直播</span>
             </button>
@@ -330,8 +330,8 @@ export default function App() {
     </header>
 
       {/* 2. DYNAMIC WORKSPACE PORT */}
-      <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
-        
+      <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center overflow-y-auto">
+
         <AnimatePresence mode="wait">
           {!inRoom ? (
             /* ==================== A. NODECRYPT GATEWAY ENTRANCE LOBBY ==================== */
@@ -340,7 +340,7 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
-              className="max-w-4xl w-full mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-center py-4 md:py-6"
+              className="max-w-4xl w-full mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start py-4 md:py-8 px-4 md:px-6"
             >
               {/* Informational Hero Casing Left - Hide on mobile */}
               <div className="hidden md:block md:col-span-5 space-y-4 md:space-y-6 order-2 md:order-1">
@@ -375,25 +375,25 @@ export default function App() {
               <div className="md:col-span-7 order-1 md:order-2 w-full">
                 <form
                   onSubmit={handleEnterRoom}
-                  className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-[24px] md:rounded-[32px] p-4 md:p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden space-y-4 md:space-y-5 w-full"
+                  className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-[20px] md:rounded-[32px] p-4 md:p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden space-y-4 md:space-y-5 w-full"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-red-500/10 blur-3xl rounded-full pointer-events-none" />
 
-                  <div className="border-b border-zinc-800/80 pb-2 md:pb-3 flex items-center gap-2">
-                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center shrink-0">
-                      <Shield className="w-4 h-4 md:w-4.5 md:h-4.5 text-red-500" />
+                  <div className="border-b border-zinc-800/80 pb-3 md:pb-3 flex items-center gap-2">
+                    <div className="w-8 h-8 md:w-8 md:h-8 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center shrink-0">
+                      <Shield className="w-4.5 h-4.5 md:w-4.5 md:h-4.5 text-red-500" />
                     </div>
-                    <h3 className="font-black text-xs md:text-sm tracking-tight text-white">进入端到端加密房间大堂</h3>
+                    <h3 className="font-black text-sm md:text-sm tracking-tight text-white">进入端到端加密房间大堂</h3>
                   </div>
 
                   {/* 1. Room ID with helper */}
                   <div className="space-y-1.5 md:space-y-2">
-                    <div className="flex justify-between items-center text-[11px] md:text-xs">
+                    <div className="flex justify-between items-center text-xs md:text-xs">
                       <label className="text-zinc-100 font-extrabold">房间 ID (Room ID)</label>
                       <button
                         type="button"
                         onClick={handleRandomRoom}
-                        className="text-red-400 hover:text-red-300 font-extrabold text-[9px] md:text-[10px] shrink-0"
+                        className="text-red-400 hover:text-red-300 font-extrabold text-[10px] md:text-[10px] shrink-0 py-1 px-2 rounded bg-red-500/10"
                       >
                         随机生成
                       </button>
@@ -403,18 +403,18 @@ export default function App() {
                       value={roomId}
                       onChange={(e) => setRoomId(e.target.value)}
                       placeholder="例如 Room-888"
-                      className="w-full bg-zinc-950/90 border border-zinc-700/80 focus:border-red-500 text-white rounded-lg md:rounded-xl px-3 md:px-3.5 py-2.5 md:py-3 font-bold font-mono text-[11px] md:text-xs focus:outline-none focus:ring-1 focus:ring-red-500/20 transition duration-300 shadow-inner"
+                      className="w-full bg-zinc-950/90 border border-zinc-700/80 focus:border-red-500 text-white rounded-lg md:rounded-xl px-4 md:px-3.5 py-2.5 md:py-3 font-bold font-mono text-sm md:text-xs focus:outline-none focus:ring-1 focus:ring-red-500/20 transition duration-300 shadow-inner"
                     />
                   </div>
 
                   {/* 2. AES Symmetric Password Key */}
                   <div className="space-y-1.5 md:space-y-2">
-                    <div className="flex justify-between items-center text-[11px] md:text-xs">
+                    <div className="flex justify-between items-center text-xs md:text-xs">
                       <label className="text-zinc-100 font-extrabold">对称加解密密钥 (Room Key)</label>
                       <button
                         type="button"
                         onClick={handleRandomKey}
-                        className="text-red-400 hover:text-red-300 font-extrabold text-[9px] md:text-[10px] shrink-0"
+                        className="text-red-400 hover:text-red-300 font-extrabold text-[10px] md:text-[10px] shrink-0 py-1 px-2 rounded bg-red-500/10"
                       >
                         生成安全密钥
                       </button>
@@ -425,40 +425,40 @@ export default function App() {
                         value={passphrase}
                         onChange={(e) => setPassphrase(e.target.value)}
                         placeholder="在此输入您的共享密码"
-                        className="w-full bg-zinc-950/90 border border-zinc-700/80 focus:border-red-500 text-white rounded-lg md:rounded-xl pl-3 md:pl-3.5 pr-9 md:pr-10 py-2.5 md:py-3 font-semibold font-mono text-[11px] md:text-xs focus:outline-none focus:ring-1 focus:ring-red-500/20 transition duration-300 shadow-inner"
+                        className="w-full bg-zinc-950/90 border border-zinc-700/80 focus:border-red-500 text-white rounded-lg md:rounded-xl pl-4 md:pl-3.5 pr-12 md:pr-10 py-2.5 md:py-3 font-semibold font-mono text-sm md:text-xs focus:outline-none focus:ring-1 focus:ring-red-500/20 transition duration-300 shadow-inner"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassphrase(!showPassphrase)}
                         className="absolute right-3 md:right-3.5 top-2.5 md:top-3 text-zinc-400 hover:text-white transition shrink-0"
                       >
-                        {showPassphrase ? <EyeOff className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Eye className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+                        {showPassphrase ? <EyeOff className="w-5 h-5 md:w-4 md:h-4" /> : <Eye className="w-5 h-5 md:w-4 md:h-4" />}
                       </button>
                     </div>
                   </div>
 
                   {/* 3. User Nickname */}
                   <div className="space-y-1.5 md:space-y-2">
-                    <label className="text-[11px] md:text-xs text-zinc-100 font-extrabold block">用户昵称 (Nickname)</label>
+                    <label className="text-xs md:text-xs text-zinc-100 font-extrabold block">用户昵称 (Nickname)</label>
                     <input
                       type="text"
                       value={nickname}
                       onChange={(e) => setNickname(e.target.value)}
                       placeholder="例如 极客探险者"
-                      className="w-full bg-zinc-950/90 border border-zinc-700/80 focus:border-red-500 text-white rounded-lg md:rounded-xl px-3 md:px-3.5 py-2.5 md:py-3 font-bold text-[11px] md:text-xs focus:outline-none focus:ring-1 focus:ring-red-500/20 transition duration-300 shadow-inner"
+                      className="w-full bg-zinc-950/90 border border-zinc-700/80 focus:border-red-500 text-white rounded-lg md:rounded-xl px-4 md:px-3.5 py-2.5 md:py-3 font-bold text-sm md:text-xs focus:outline-none focus:ring-1 focus:ring-red-500/20 transition duration-300 shadow-inner"
                     />
                   </div>
 
                   {/* 4. Avatar Preset Selection list */}
                   <div className="space-y-1.5 md:space-y-2">
-                    <label className="text-[11px] md:text-xs text-zinc-100 font-extrabold block">选择用户头像 (Avatar)</label>
+                    <label className="text-xs md:text-xs text-zinc-100 font-extrabold block">选择用户头像 (Avatar)</label>
                     <div className="flex gap-2 md:gap-3 justify-between items-center py-1 flex-wrap">
                       {PRESET_AVATARS.map((av, idx) => (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => setSelectedAvatarIdx(idx)}
-                          className={`w-9 h-9 md:w-11 md:h-11 rounded-full overflow-hidden border-2 transition shrink-0 ${
+                          className={`w-10 h-10 md:w-11 md:h-11 rounded-full overflow-hidden border-2 transition shrink-0 ${
                             selectedAvatarIdx === idx
                               ? 'border-red-500 scale-105 md:scale-110 shadow-lg shadow-red-500/25'
                               : 'border-zinc-800 opacity-70 hover:opacity-100 hover:border-zinc-600'
@@ -473,9 +473,9 @@ export default function App() {
                   {/* Enter Button */}
                   <button
                     type="submit"
-                    className="w-full py-4 md:py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 active:scale-[0.99] transition rounded-lg md:rounded-xl font-black text-[14px] md:text-sm tracking-wide shadow-xl shadow-red-500/15 text-white flex items-center justify-center gap-2 relative z-10 mt-6"
+                    className="w-full py-3.5 md:py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 active:scale-[0.99] transition rounded-xl md:rounded-xl font-black text-base md:text-sm tracking-wide shadow-xl shadow-red-500/15 text-white flex items-center justify-center gap-2 relative z-10 mt-4"
                   >
-                    <Lock className="w-4 h-4 md:w-4 md:h-4 shrink-0" />
+                    <Lock className="w-5 h-5 md:w-4 md:h-4 shrink-0" />
                     <span className="text-center">初始化并连接零知识 E2EE 房间</span>
                   </button>
                 </form>
@@ -530,14 +530,14 @@ export default function App() {
                 >
                   <div className="relative w-full max-w-md mx-auto">
                     {/* Smartphone Case Frame Decoration */}
-                    <div className="relative bg-[#0F111A] rounded-[32px] md:rounded-[42px] p-2 md:p-3.5 shadow-2xl border-3 md:border-4 border-zinc-800/80 ring-1 ring-zinc-700/50 overflow-hidden">
+                    <div className="relative bg-[#0F111A] rounded-[24px] md:rounded-[42px] p-2 md:p-3.5 shadow-2xl border-3 md:border-4 border-zinc-800/80 ring-1 ring-zinc-700/50 overflow-hidden">
                       {/* Speaker Hole */}
-                      <div className="absolute top-4 md:top-6 left-1/2 -translate-x-1/2 w-16 md:w-20 h-3 md:h-4 bg-black rounded-full z-50 flex items-center justify-center">
+                      <div className="absolute top-3 md:top-6 left-1/2 -translate-x-1/2 w-14 md:w-20 h-2.5 md:h-4 bg-black rounded-full z-50 flex items-center justify-center">
                         <div className="w-1.5 md:w-2 h-1.5 md:h-2 rounded-full bg-zinc-800/80 ml-1.5 md:ml-2" />
                       </div>
 
                       {/* Content inside the smartphone wrapper */}
-                      <div className="rounded-[24px] md:rounded-[30px] overflow-hidden bg-zinc-950 relative h-[600px] md:h-[800px]">
+                      <div className="rounded-[20px] md:rounded-[30px] overflow-hidden bg-zinc-950 relative h-[450px] md:h-[800px]">
                         <AnimatePresence mode="wait">
                           {showCreationStudio && !activeRoomSettings ? (
                             <motion.div
@@ -577,13 +577,13 @@ export default function App() {
                               className="h-full flex flex-col justify-between p-4 md:p-6 bg-gradient-to-b from-zinc-900 via-[#0A0C10] to-zinc-950 text-center"
                             >
                               <div className="my-auto space-y-4 md:space-y-6">
-                                <div className="mx-auto w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center shadow-lg text-zinc-500">
-                                  <Radio className="w-6 h-6 md:w-8 md:h-8 text-zinc-600" />
+                                <div className="mx-auto w-14 h-14 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center shadow-lg text-zinc-500">
+                                  <Radio className="w-7 h-7 md:w-8 md:h-8 text-zinc-600" />
                                 </div>
 
-                                <div className="space-y-1.5 md:space-y-2">
-                                  <h4 className="font-extrabold text-sm md:text-base text-zinc-200">直播间处于空闲状态</h4>
-                                  <p className="text-[11px] md:text-xs text-zinc-500 leading-relaxed px-2 md:px-4">
+                                <div className="space-y-2 md:space-y-2">
+                                  <h4 className="font-extrabold text-base md:text-base text-zinc-200">直播间处于空闲状态</h4>
+                                  <p className="text-sm md:text-xs text-zinc-500 leading-relaxed px-2 md:px-4">
                                     当前加密房内未开启直播。任何人都可以开启直播，邀请房间里的伙伴加入，开启语音/视频互动。
                                   </p>
                                 </div>
@@ -593,13 +593,13 @@ export default function App() {
                                     setShowCreationStudio(true);
                                     setActiveTab('both');
                                   }}
-                                  className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-[#FF2442] to-[#FF4E69] text-white font-extrabold text-[11px] md:text-xs rounded-lg md:rounded-xl shadow-lg shadow-red-500/10 hover:brightness-105 transition"
+                                  className="px-6 md:px-6 py-3 md:py-3 bg-gradient-to-r from-[#FF2442] to-[#FF4E69] text-white font-extrabold text-sm md:text-xs rounded-xl md:rounded-xl shadow-lg shadow-red-500/10 hover:brightness-105 transition"
                                 >
                                   开启加密直播
                                 </button>
                               </div>
 
-                              <div className="border-t border-zinc-900 pt-3 md:pt-4 text-[9px] md:text-[10px] text-zinc-600 font-mono">
+                              <div className="border-t border-zinc-900 pt-3 md:pt-4 text-[10px] md:text-[10px] text-zinc-600 font-mono">
                                 RED LIVE STREAM WRAPPER • OFFLINE
                               </div>
                             </motion.div>

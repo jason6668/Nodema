@@ -1397,7 +1397,7 @@ export default function SecureChatRoom({
         isDesktopLayout
           ? (showSettingsSidebar || showMembersSidebar ? 'max-w-6xl' : 'max-w-2xl')
           : 'max-w-full'
-      } mx-auto h-[calc(100dvh-0.5rem)] md:h-[850px] flex flex-col rounded-2xl md:rounded-3xl border ${isThemeLight ? 'border-zinc-200 text-zinc-800' : 'border-zinc-800/80 text-slate-200'} overflow-hidden relative transition-all duration-300 shadow-2xl ${
+      } mx-auto h-[calc(100dvh-1rem)] md:h-[850px] flex flex-col rounded-2xl md:rounded-3xl border ${isThemeLight ? 'border-zinc-200 text-zinc-800' : 'border-zinc-800/80 text-slate-200'} overflow-hidden relative transition-all duration-300 shadow-2xl ${
         enableBlurOnInactive && !isWindowFocused ? 'blur-md brightness-50 scale-[0.99] pointer-events-none' : ''
       } ${THEMES.find(t => t.id === activeThemeId)?.bgClass || 'bg-[#07090E]'}`}
     >
@@ -1419,31 +1419,31 @@ export default function SecureChatRoom({
       )}
 
       {/* 1. ROOM HEADER METADATA */}
-      <div className={`px-3 md:px-4 py-2.5 md:py-3.5 border-b flex items-center justify-between z-20 transition-all duration-300 ${
+      <div className={`px-4 md:px-4 py-3 md:py-3.5 border-b flex items-center justify-between z-20 transition-all duration-300 ${
         isThemeLight
           ? 'bg-white/85 border-zinc-200 text-zinc-800 backdrop-blur-md'
           : 'bg-zinc-950/80 border-zinc-800/80 text-white backdrop-blur-md'
       }`}>
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-3 md:gap-3">
           <button
             onClick={onLeave}
-            className={`p-1 md:p-1.5 rounded-lg transition ${isThemeLight ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900' : 'hover:bg-zinc-800/60 text-zinc-400 hover:text-white'}`}
+            className={`p-2 md:p-1.5 rounded-lg transition ${isThemeLight ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900' : 'hover:bg-zinc-800/60 text-zinc-400 hover:text-white'}`}
           >
-            <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
+            <ChevronLeft className="w-5 h-5 md:w-5 md:h-5" />
           </button>
 
           <div>
             <div className="flex items-center gap-1.5">
-              <span className={`font-extrabold text-sm tracking-tight flex items-center gap-1 ${isThemeLight ? 'text-zinc-900' : 'text-white'}`}>
+              <span className={`font-extrabold text-base tracking-tight flex items-center gap-1 ${isThemeLight ? 'text-zinc-900' : 'text-white'}`}>
                 {roomId}
               </span>
-              <div className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 py-0.5 rounded text-[8px] font-bold flex items-center gap-0.5">
-                <Shield className="w-2.5 h-2.5 fill-emerald-500/20" />
+              <div className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded text-[9px] font-bold flex items-center gap-0.5">
+                <Shield className="w-3 h-3 fill-emerald-500/20" />
                 <span>E2EE 军工加密</span>
               </div>
             </div>
 
-            <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+            <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
               密钥: <span className={isThemeLight ? 'text-zinc-600' : 'text-zinc-400'}>{passphrase}</span>
             </p>
             
@@ -1458,13 +1458,13 @@ export default function SecureChatRoom({
         </div>
 
         {/* Action Controls (Go Live / Call Controls / Wallpaper / Copy / Panel Toggles) */}
-        <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex items-center gap-2 md:gap-2">
           {/* E2EE Voice Call */}
           <button
             type="button"
             onClick={() => handleStartCall('voice')}
             disabled={callState !== 'idle'}
-            className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
+            className={`p-2 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
               callState === 'connected' && callType === 'voice'
                 ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.15)] animate-pulse'
                 : isThemeLight
@@ -1473,7 +1473,7 @@ export default function SecureChatRoom({
             }`}
             title="E2EE语音通话"
           >
-            <Phone className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-500 animate-bounce" />
+            <Phone className="w-4 h-4 md:w-3.5 md:h-3.5 text-emerald-500 animate-bounce" />
             <span className="hidden md:inline text-[11px]">语音通话</span>
           </button>
 
@@ -1482,7 +1482,7 @@ export default function SecureChatRoom({
             type="button"
             onClick={() => handleStartCall('video')}
             disabled={callState !== 'idle'}
-            className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
+            className={`p-2 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
               callState === 'connected' && callType === 'video'
                 ? 'bg-pink-500/20 border-pink-500/50 text-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.15)] animate-pulse'
                 : isThemeLight
@@ -1491,7 +1491,7 @@ export default function SecureChatRoom({
             }`}
             title="E2EE视频通话"
           >
-            <Video className="w-3 h-3 md:w-3.5 md:h-3.5 text-pink-500 animate-pulse" />
+            <Video className="w-4 h-4 md:w-3.5 md:h-3.5 text-pink-500 animate-pulse" />
             <span className="hidden md:inline text-[11px]">视频通话</span>
           </button>
 
@@ -1504,7 +1504,7 @@ export default function SecureChatRoom({
                 setActiveThemeId('sakura_dream');
               }
             }}
-            className={`p-1.5 md:p-2 border rounded-lg md:rounded-xl transition flex items-center gap-1 md:gap-1.5 active:scale-95 ${
+            className={`p-2 md:p-2 border rounded-lg md:rounded-xl transition flex items-center gap-1 md:gap-1.5 active:scale-95 ${
               isThemeLight
                 ? 'bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100'
                 : 'bg-zinc-900 border-zinc-800 text-indigo-400 hover:text-white hover:bg-zinc-800/60'
@@ -1513,13 +1513,13 @@ export default function SecureChatRoom({
           >
             {isThemeLight ? (
               <>
-                <Moon className="w-3 h-3 md:w-3.5 md:h-3.5 animate-pulse" />
-                <span className="text-[9px] md:text-[10px] font-black hidden sm:inline">夜间</span>
+                <Moon className="w-4 h-4 md:w-3.5 md:h-3.5 animate-pulse" />
+                <span className="text-[10px] md:text-[10px] font-black hidden sm:inline">夜间</span>
               </>
             ) : (
               <>
-                <Sun className="w-3 h-3 md:w-3.5 md:h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
-                <span className="text-[9px] md:text-[10px] font-black hidden sm:inline text-amber-400">白天</span>
+                <Sun className="w-4 h-4 md:w-3.5 md:h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+                <span className="text-[10px] md:text-[10px] font-black hidden sm:inline text-amber-400">白天</span>
               </>
             )}
           </button>
@@ -1527,7 +1527,7 @@ export default function SecureChatRoom({
           {/* Settings Toggle Panel */}
           <button
             onClick={() => setShowSettingsSidebar(!showSettingsSidebar)}
-            className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
+            className={`p-2 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
               showSettingsSidebar
                 ? 'bg-red-500/20 border-red-500/50 text-red-600 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
                 : isThemeLight
@@ -1536,16 +1536,16 @@ export default function SecureChatRoom({
             }`}
             title="Toggle Settings Sidebar"
           >
-            <Settings className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <Settings className="w-4 h-4 md:w-3.5 md:h-3.5" />
             <span className="hidden sm:inline text-[11px]">{t.settings}</span>
           </button>
 
           {/* Members Toggle Panel */}
           <button
             onClick={() => setShowMembersSidebar(!showMembersSidebar)}
-            className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
-              showMembersSidebar 
-                ? 'bg-red-500/20 border-red-500/50 text-red-600 shadow-[0_0_10px_rgba(239,68,68,0.15)]' 
+            className={`p-2 md:p-2 rounded-lg md:rounded-xl border transition flex items-center gap-1 text-[11px] md:text-xs font-semibold ${
+              showMembersSidebar
+                ? 'bg-red-500/20 border-red-500/50 text-red-600 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
                 : isThemeLight
                 ? 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900'
                 : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800/60'
@@ -1647,13 +1647,13 @@ export default function SecureChatRoom({
               <div className="p-4 space-y-5">
                 {/* 1. Notification Settings */}
                 <div className="space-y-3">
-                  <h4 className="text-[10px] uppercase font-black tracking-widest text-zinc-500 flex items-center gap-1.5">
-                    <Bell className="w-3 h-3 text-red-500" />
+                  <h4 className="text-[11px] uppercase font-black tracking-widest text-zinc-500 flex items-center gap-1.5">
+                    <Bell className="w-4 h-4 text-red-500" />
                     <span>{t.notifSettings}</span>
                   </h4>
-                  <div className={`space-y-2 border p-3 rounded-2xl ${isThemeLight ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-900/40 border-zinc-800/50'}`}>
+                  <div className={`space-y-3 border p-4 rounded-2xl ${isThemeLight ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-900/40 border-zinc-800/50'}`}>
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs ${isThemeLight ? 'text-zinc-700' : 'text-zinc-300'} font-semibold`}>{t.desktopNotif}</span>
+                      <span className={`text-sm ${isThemeLight ? 'text-zinc-700' : 'text-zinc-300'} font-semibold`}>{t.desktopNotif}</span>
                       <button
                         onClick={() => {
                           const next = !desktopNotifications;
@@ -1662,20 +1662,20 @@ export default function SecureChatRoom({
                             Notification.requestPermission();
                           }
                         }}
-                        className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${
                           desktopNotifications ? 'bg-red-500' : isThemeLight ? 'bg-zinc-200' : 'bg-zinc-800'
                         }`}
                       >
                         <div
-                          className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
-                            desktopNotifications ? 'translate-x-4' : 'translate-x-0'
+                          className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ${
+                            desktopNotifications ? 'translate-x-5' : 'translate-x-0'
                           }`}
                         />
                       </button>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs ${isThemeLight ? 'text-zinc-700' : 'text-zinc-300'} font-semibold`}>{t.soundNotif}</span>
+                      <span className={`text-sm ${isThemeLight ? 'text-zinc-700' : 'text-zinc-300'} font-semibold`}>{t.soundNotif}</span>
                       <button
                         onClick={() => {
                           const next = !soundNotifications;
@@ -1684,13 +1684,13 @@ export default function SecureChatRoom({
                             setTimeout(() => playNotificationSound(), 100);
                           }
                         }}
-                        className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${
                           soundNotifications ? 'bg-red-500' : isThemeLight ? 'bg-zinc-200' : 'bg-zinc-800'
                         }`}
                       >
                         <div
-                          className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
-                            soundNotifications ? 'translate-x-4' : 'translate-x-0'
+                          className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ${
+                            soundNotifications ? 'translate-x-5' : 'translate-x-0'
                           }`}
                         />
                       </button>
@@ -2640,18 +2640,18 @@ export default function SecureChatRoom({
             )}
 
             {/* Dynamic Tool Row (Flame Burn, Voice Recorder trigger, sticker popups, file attachment) */}
-            <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                
+
                 {/* 1. Self-destruct burner selector */}
-                <div className={`flex items-center gap-1.5 border px-2 py-1 rounded-xl ${
+                <div className={`flex items-center gap-1.5 border px-2 py-1.5 rounded-xl ${
                   isThemeLight ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
                 }`}>
-                  <Flame className={`w-3.5 h-3.5 ${burnDurationToColor(burnTimer)}`} />
+                  <Flame className={`w-4 h-4 ${burnDurationToColor(burnTimer)}`} />
                   <select
                     value={burnTimer || ''}
                     onChange={(e) => setBurnTimer(e.target.value ? Number(e.target.value) : undefined)}
-                    className={`bg-transparent text-[10px] focus:outline-none border-none p-0 cursor-pointer font-bold ${
+                    className={`bg-transparent text-[11px] focus:outline-none border-none p-0 cursor-pointer font-bold ${
                       isThemeLight ? 'text-zinc-700' : 'text-zinc-300'
                     }`}
                   >
@@ -2670,52 +2670,52 @@ export default function SecureChatRoom({
                     const dummyImg = 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?q=80&w=300&auto=format&fit=crop';
                     receivePeerMessage(nickname, avatarUrl, 'E2EE Encrypted Image attached', 'image', dummyImg);
                   }}
-                  className={`p-2 rounded-xl transition ${
+                  className={`p-2.5 rounded-xl transition ${
                     isThemeLight ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'
                   }`}
                   title="发送模拟加密图片"
                 >
-                  <ImageIcon className="w-4 h-4 text-rose-400" />
+                  <ImageIcon className="w-5 h-5 text-rose-400" />
                 </button>
 
                 {/* 3. Real E2EE Image/Album Upload Button */}
                 <button
                   type="button"
                   onClick={handleImageUploadClick}
-                  className={`p-2 rounded-xl transition ${
+                  className={`p-2.5 rounded-xl transition ${
                     isThemeLight ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'
                   }`}
                   title="选择本地照片/相册上传 (E2EE)"
                 >
-                  <Camera className="w-4 h-4 text-emerald-400" />
+                  <Camera className="w-5 h-5 text-emerald-400" />
                 </button>
 
                 {/* 4. Real E2EE File Upload Button */}
                 <button
                   type="button"
                   onClick={handleFileUploadClick}
-                  className={`p-2 rounded-xl transition ${
+                  className={`p-2.5 rounded-xl transition ${
                     isThemeLight ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'
                   }`}
                   title="选择本地安全文件上传 (E2EE)"
                 >
-                  <Upload className="w-4 h-4 text-indigo-400" />
+                  <Upload className="w-5 h-5 text-indigo-400" />
                 </button>
 
                 {/* 3. Searchable Emoji Picker toggle trigger button */}
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className={`p-2 rounded-xl transition ${
-                    showEmojiPicker 
-                      ? 'bg-red-500/20 text-red-500 border border-red-500/30' 
+                  className={`p-2.5 rounded-xl transition ${
+                    showEmojiPicker
+                      ? 'bg-red-500/20 text-red-500 border border-red-500/30'
                       : isThemeLight
                       ? 'bg-zinc-50 border border-zinc-200 text-zinc-500 hover:text-zinc-850'
                       : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
                   }`}
                   title="表情包"
                 >
-                  <Smile className="w-4 h-4" />
+                  <Smile className="w-5 h-5" />
                 </button>
 
                 {/* 4. Audio Recording mockup trigger */}
@@ -2723,7 +2723,7 @@ export default function SecureChatRoom({
                   <button
                     type="button"
                     onClick={handleSendMessage}
-                    className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-extrabold px-3 py-1 rounded-full text-[10px] animate-pulse"
+                    className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-extrabold px-3 py-1.5 rounded-full text-[11px] animate-pulse"
                     title="完成并发送加密语音"
                   >
                     <span className="w-2 h-2 bg-white rounded-full animate-ping" />
@@ -2733,17 +2733,17 @@ export default function SecureChatRoom({
                   <button
                     type="button"
                     onClick={() => setIsRecording(true)}
-                    className={`p-2 rounded-xl transition ${
+                    className={`p-2.5 rounded-xl transition ${
                       isThemeLight ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'
                     }`}
                     title="发送加密语音"
                   >
-                    <Mic className="w-4 h-4" />
+                    <Mic className="w-5 h-5" />
                   </button>
                 )}
               </div>
 
-              <div className={`text-[10px] font-mono ${isThemeLight ? 'text-zinc-450' : 'text-zinc-500'}`}>
+              <div className={`text-[11px] font-mono ${isThemeLight ? 'text-zinc-450' : 'text-zinc-500'}`}>
                 Room Hash: {roomId.slice(0, 8)}...
               </div>
             </div>
@@ -2761,14 +2761,14 @@ export default function SecureChatRoom({
             )}
 
             {/* Input Text Form Area */}
-            <form onSubmit={handleSendMessage} className="flex gap-1.5 md:gap-2">
+            <form onSubmit={handleSendMessage} className="flex gap-2 md:gap-2">
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 disabled={isRecording}
                 placeholder={isRecording ? t.inputTextRecording : t.inputTextPlaceholder}
-                className={`flex-1 focus:border-red-500 focus:ring-1 focus:ring-red-500/20 text-[11px] md:text-xs rounded-lg md:rounded-xl px-3 md:px-4 py-2 md:py-3 focus:outline-none transition-all duration-300 ${
+                className={`flex-1 focus:border-red-500 focus:ring-1 focus:ring-red-500/20 text-sm md:text-xs rounded-lg md:rounded-xl px-4 md:px-4 py-3 md:py-3 focus:outline-none transition-all duration-300 ${
                   isThemeLight
                     ? 'bg-zinc-50 border border-zinc-200 text-zinc-800 placeholder-zinc-400'
                     : 'bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-500'
@@ -2778,9 +2778,9 @@ export default function SecureChatRoom({
 
               <button
                 type="submit"
-                className="p-2 md:p-3 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 text-white rounded-lg md:rounded-xl shadow-lg active:scale-95 transition"
+                className="p-3 md:p-3 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 text-white rounded-lg md:rounded-xl shadow-lg active:scale-95 transition"
               >
-                <Send className="w-3.5 h-3.5 md:w-4.5 md:h-4.5" />
+                <Send className="w-5 h-5 md:w-4.5 md:h-4.5" />
               </button>
             </form>
           </div>
