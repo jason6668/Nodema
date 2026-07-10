@@ -329,7 +329,8 @@ export default function SecureChatRoom({
   const [isCallMuted, setIsCallMuted] = useState(false);
   const [isCallCameraOff, setIsCallCameraOff] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [activeCallPeer, setActiveCallPeer] = useState<{ name: string; avatar: string } | null>(null);
+  const [activeCallPeer, setActiveCallPeer] = useState<{ name: string; avatar: string; id: string } | null>(null);
+  const [incomingCall, setIncomingCall] = useState<{ caller: { name: string; avatar: string; id: string }; type: 'voice' | 'video' } | null>(null);
 
   const callTimerRef = useRef<any>(null);
   const ringtoneIntervalRef = useRef<any>(null);
@@ -549,7 +550,21 @@ export default function SecureChatRoom({
       return;
     }
     const randomPeer = realPeers[Math.floor(Math.random() * realPeers.length)];
-    setActiveCallPeer({ name: randomPeer.nickname, avatar: randomPeer.avatarUrl });
+    setActiveCallPeer({ name: randomPeer.nickname, avatar: randomPeer.avatarUrl, id: randomPeer.id });
+
+    // Send call invitation via WebSocket
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'call_invitation',
+        roomId,
+        userId: myUserId,
+        data: {
+          caller: { name: nickname, avatar: avatarUrl, id: myUserId },
+          callee: { id: randomPeer.id },
+          callType: type
+        }
+      }));
+    }
 
     // Play ringing loop sound
     playRingingSound();
@@ -602,7 +617,21 @@ export default function SecureChatRoom({
     setCallDuration(0);
     setIsCallMuted(false);
     setIsCallCameraOff(false);
-    setActiveCallPeer(user);
+    setActiveCallPeer({ name: user.nickname, avatar: user.avatarUrl, id: user.id });
+
+    // Send call invitation via WebSocket
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'call_invitation',
+        roomId,
+        userId: myUserId,
+        data: {
+          caller: { name: nickname, avatar: avatarUrl, id: myUserId },
+          callee: { id: user.id },
+          callType: type
+        }
+      }));
+    }
 
     // Play ringing loop sound
     playRingingSound();
@@ -648,6 +677,89 @@ export default function SecureChatRoom({
     }, 3500);
   };
 
+  // Accept incoming call
+  const handleAcceptCall = async () => {
+    if (!incomingCall) return;
+
+    if (ringtoneIntervalRef.current) {
+      clearInterval(ringtoneIntervalRef.current);
+      ringtoneIntervalRef.current = null;
+    }
+
+    setCallType(incomingCall.type);
+    setCallState('connected');
+    setActiveCallPeer(incomingCall.caller);
+    setIncomingCall(null);
+
+    // Send acceptance via WebSocket
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'call_accepted',
+        roomId,
+        userId: myUserId,
+        data: {
+          caller: incomingCall.caller,
+          callee: { name: nickname, avatar: avatarUrl, id: myUserId }
+        }
+      }));
+    }
+
+    // If video, try setting up webcam
+    if (incomingCall.type === 'video') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 320, height: 240, facingMode: 'user' },
+          audio: true
+        });
+        setLocalStream(stream);
+      } catch (err) {
+        console.warn('Webcam permission denied or unavailable:', err);
+      }
+    }
+
+    playConnectedSound();
+
+    // Add connection message to chat E2EE
+    const secureLabel = incomingCall.type === 'video' ? '🔒 AES-GCM 端对端加密视频通话已联通' : '🔒 AES-GCM 端对端加密语音通话已联通';
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `call-log-start-${Date.now()}`,
+        userId: 'system',
+        userName: 'NodeCrypt',
+        avatar: '',
+        content: `${secureLabel} (与 ${incomingCall.caller.name} 通话中)`,
+        type: 'system'
+      }
+    ]);
+  };
+
+  // Reject incoming call
+  const handleRejectCall = () => {
+    if (!incomingCall) return;
+
+    if (ringtoneIntervalRef.current) {
+      clearInterval(ringtoneIntervalRef.current);
+      ringtoneIntervalRef.current = null;
+    }
+
+    // Send rejection via WebSocket
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'call_rejected',
+        roomId,
+        userId: myUserId,
+        data: {
+          caller: incomingCall.caller,
+          callee: { name: nickname, avatar: avatarUrl, id: myUserId }
+        }
+      }));
+    }
+
+    setIncomingCall(null);
+    playHangupSound();
+  };
+
   // Disconnect call session
   const handleHangUp = () => {
     playHangupSound();
@@ -659,6 +771,19 @@ export default function SecureChatRoom({
       localStream.getTracks().forEach(track => track.stop());
       setLocalStream(null);
     }
+
+    // Send call ended signal
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'call_ended',
+        roomId,
+        userId: myUserId,
+        data: {
+          peer: activeCallPeer
+        }
+      }));
+    }
+
     setCallState('idle');
     setCallType(null);
 
@@ -958,6 +1083,71 @@ export default function SecureChatRoom({
                 if (prev.some(m => m.id === leftMsg.id)) return prev;
                 return [...prev, leftMsg];
               });
+              break;
+            }
+
+            case 'call_invitation': {
+              // Only show invitation if it's for me
+              if (data.callee && data.callee.id === myUserId) {
+                setIncomingCall({
+                  caller: data.caller,
+                  type: data.callType
+                });
+                playRingingSound();
+                ringtoneIntervalRef.current = setInterval(() => {
+                  playRingingSound();
+                }, 2500);
+              }
+              break;
+            }
+
+            case 'call_accepted': {
+              // The callee accepted the call
+              if (data.caller && data.caller.id === myUserId) {
+                if (ringtoneIntervalRef.current) {
+                  clearInterval(ringtoneIntervalRef.current);
+                  ringtoneIntervalRef.current = null;
+                }
+                playConnectedSound();
+                setCallState('connected');
+                setIncomingCall(null);
+              }
+              break;
+            }
+
+            case 'call_rejected': {
+              // The callee rejected the call
+              if (data.caller && data.caller.id === myUserId) {
+                if (ringtoneIntervalRef.current) {
+                  clearInterval(ringtoneIntervalRef.current);
+                  ringtoneIntervalRef.current = null;
+                }
+                setCallState('idle');
+                setCallType(null);
+                setActiveCallPeer(null);
+                if (localStream) {
+                  localStream.getTracks().forEach(track => track.stop());
+                  setLocalStream(null);
+                }
+                alert('对方拒绝了通话邀请');
+              }
+              break;
+            }
+
+            case 'call_ended': {
+              // Call ended by either party
+              if (ringtoneIntervalRef.current) {
+                clearInterval(ringtoneIntervalRef.current);
+                ringtoneIntervalRef.current = null;
+              }
+              setCallState('idle');
+              setCallType(null);
+              setActiveCallPeer(null);
+              setIncomingCall(null);
+              if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                setLocalStream(null);
+              }
               break;
             }
 
@@ -2949,6 +3139,64 @@ export default function SecureChatRoom({
               <div className="mt-4 text-center">
                 <p className="text-[9px] text-zinc-600 italic">
                   🔒 所有视觉效果均在本地沙箱安全渲染
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Incoming Call Modal */}
+      <AnimatePresence>
+        {incomingCall && (
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={`bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800/80 p-6 rounded-3xl w-full max-w-[360px] shadow-2xl relative`}
+            >
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden border-4 border-emerald-500/30 shadow-lg shadow-emerald-500/20">
+                  <img src={incomingCall.caller.avatar} alt={incomingCall.caller.name} className="w-full h-full object-cover" />
+                </div>
+
+                <h3 className="text-lg font-bold text-white mb-2">
+                  {incomingCall.caller.name}
+                </h3>
+
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  {incomingCall.type === 'video' ? (
+                    <>
+                      <Video className="w-4 h-4 text-pink-500 animate-pulse" />
+                      <span className="text-sm text-zinc-400">视频通话邀请</span>
+                    </>
+                  ) : (
+                    <>
+                      <Phone className="w-4 h-4 text-emerald-500 animate-pulse" />
+                      <span className="text-sm text-zinc-400">语音通话邀请</span>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={handleRejectCall}
+                    className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-200 shadow-lg shadow-red-500/30"
+                  >
+                    <PhoneOff className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={handleAcceptCall}
+                    className="w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all duration-200 shadow-lg shadow-emerald-500/30"
+                  >
+                    <Phone className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-zinc-500 mt-4 flex items-center justify-center gap-1">
+                  <Lock className="w-3 h-3" />
+                  <span>端到端加密通话</span>
                 </p>
               </div>
             </motion.div>
