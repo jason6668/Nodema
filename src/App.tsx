@@ -33,6 +33,7 @@ import { RoomSettings } from './types';
 import CreationStudio from './components/CreationStudio';
 import LiveRoom from './components/LiveRoom';
 import SecureChatRoom, { ThemeEffectsOverlay, THEMES } from './components/SecureChatRoom';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { encryptText, decryptText } from './utils/crypto';
 
 const PRESET_AVATARS = [
@@ -204,9 +205,10 @@ export default function App() {
   const isThemeLight = activeThemeId === 'sakura_dream' || activeThemeId === 'strawberry_milky' || activeThemeId === 'telegram_blue' || activeThemeId === 'telegram_mint' || activeThemeId === 'telegram_peach';
 
   return (
-    <div className={`min-h-screen transition-all duration-500 font-sans flex flex-col antialiased selection:bg-red-500/10 selection:text-red-600 relative overflow-hidden ${
-      inRoom ? activeTheme.bgClass + ' text-zinc-100' : 'bg-[#080B10] bg-gradient-to-br from-[#080B10] via-[#020408] to-[#0E131F] text-zinc-100'
-    }`}>
+    <ErrorBoundary>
+      <div className={`min-h-screen transition-all duration-500 font-sans flex flex-col antialiased selection:bg-red-500/10 selection:text-red-600 relative overflow-hidden ${
+        inRoom ? activeTheme.bgClass + ' text-zinc-100' : 'bg-[#080B10] bg-gradient-to-br from-[#080B10] via-[#020408] to-[#0E131F] text-zinc-100'
+      }`}>
       {/* Dynamic Ambient Glowing Orbs when in Lobby */}
       {!inRoom && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -945,5 +947,6 @@ export default function App() {
         )}
       </AnimatePresence>
     </div>
+    </ErrorBoundary>
   );
 }
