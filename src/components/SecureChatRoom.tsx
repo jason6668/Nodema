@@ -375,6 +375,7 @@ export default function SecureChatRoom({
           setMessages((prev) => [...prev, socketMsg]);
           e.target.value = '';
 
+          // Try WebSocket first, then fallback to HTTP polling
           if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({
               type: 'message',
@@ -382,6 +383,8 @@ export default function SecureChatRoom({
               userId: myUserId,
               data: { message: socketMsg }
             }));
+          } else if ((window as any).sendMessageViaHttp) {
+            (window as any).sendMessageViaHttp(socketMsg);
           }
         } catch (err) {
           console.error('Image encrypt fail:', err);
@@ -419,6 +422,7 @@ export default function SecureChatRoom({
           setMessages((prev) => [...prev, socketMsg]);
           e.target.value = '';
 
+          // Try WebSocket first, then fallback to HTTP polling
           if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({
               type: 'message',
@@ -426,6 +430,8 @@ export default function SecureChatRoom({
               userId: myUserId,
               data: { message: socketMsg }
             }));
+          } else if ((window as any).sendMessageViaHttp) {
+            (window as any).sendMessageViaHttp(socketMsg);
           }
         } catch (err) {
           console.error('File encrypt fail:', err);
@@ -1042,11 +1048,15 @@ export default function SecureChatRoom({
       joinViaHttp();
       pollingInterval = window.setInterval(pollMessages, 3000); // Poll every 3 seconds
 
+      // Store sendMessageViaHttp globally for use in message sending
+      (window as any).sendMessageViaHttp = sendMessageViaHttp;
+
       // Cleanup
       return () => {
         if (pollingInterval) {
           clearInterval(pollingInterval);
         }
+        delete (window as any).sendMessageViaHttp;
       };
     };
 
@@ -1615,6 +1625,7 @@ export default function SecureChatRoom({
       setInputText('');
       setReplyTarget(null);
 
+      // Try WebSocket first, then fallback to HTTP polling
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         const messagePayload = JSON.stringify({
           type: 'message',
@@ -1622,11 +1633,15 @@ export default function SecureChatRoom({
           userId: myUserId,
           data: { message: socketMsg }
         });
-        console.log(`[SEND MESSAGE] Sending message to room ${roomId}, userId: ${myUserId}, messageId: ${socketMsg.id}`);
+        console.log(`[SEND MESSAGE] Sending message via WebSocket to room ${roomId}, userId: ${myUserId}, messageId: ${socketMsg.id}`);
         console.log(`[SEND MESSAGE] Payload:`, messagePayload);
         wsRef.current.send(messagePayload);
+      } else if ((window as any).sendMessageViaHttp) {
+        // Fallback to HTTP polling for mobile devices
+        console.log(`[SEND MESSAGE] Sending message via HTTP polling to room ${roomId}, userId: ${myUserId}, messageId: ${socketMsg.id}`);
+        (window as any).sendMessageViaHttp(socketMsg);
       } else {
-        console.error(`[SEND MESSAGE] WebSocket not ready. State: ${wsRef.current?.readyState}, OPEN: ${WebSocket.OPEN}`);
+        console.error(`[SEND MESSAGE] Neither WebSocket nor HTTP polling available. WebSocket state: ${wsRef.current?.readyState}, OPEN: ${WebSocket.OPEN}`);
       }
     } catch (err) {
       alert('加密失败，请核对密钥设置。');
