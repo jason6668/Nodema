@@ -968,25 +968,6 @@ export default function SecureChatRoom({
           const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`;
           alert(`正在连接房间: ${roomId}\nURL: ${url}\n用户ID: ${myUserId}`);
 
-          // Check network connectivity
-          if (!navigator.onLine) {
-            alert(`网络离线: 请检查网络连接`);
-            return;
-          }
-
-          alert(`网络在线，准备发送请求...`);
-
-          // Test simple GET request first to check connectivity
-          try {
-            const testUrl = `${baseUrl}/`;
-            alert(`测试连接: ${testUrl}`);
-            const testResponse = await fetch(testUrl, { method: 'GET' });
-            alert(`测试连接成功: ${testResponse.status}`);
-          } catch (testErr: any) {
-            alert(`测试连接失败: ${testErr.message}`);
-            return;
-          }
-
           // Add timeout and detailed error handling
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
@@ -1039,11 +1020,7 @@ export default function SecureChatRoom({
           }
         } catch (err: any) {
           console.error('HTTP polling join failed:', err);
-          if (err.name === 'AbortError') {
-            alert(`连接超时: 请求超过10秒未响应`);
-          } else {
-            alert(`连接错误: ${err.message || err}\n错误名称: ${err.name}`);
-          }
+          alert(`连接错误: ${err.message || err}\n错误名称: ${err.name}\n错误详情: ${JSON.stringify(err)}`);
         }
       };
 
