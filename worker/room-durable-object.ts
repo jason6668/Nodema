@@ -131,6 +131,7 @@ export class RoomDurableObject {
 
       if (method === 'get_messages') {
         // Return current messages for polling
+        console.log(`[HTTP POLLING] Getting messages for ${userId}, current messages: ${this.messages.length}`);
         return Response.json({
           type: 'poll_response',
           data: {
@@ -151,9 +152,11 @@ export class RoomDurableObject {
           try {
             const body = await request.json();
             const message = body.message;
+            console.log(`[HTTP POLLING] Sending message from ${userId}, messageId: ${message.id}`);
             await this.handleMessageBroadcast(userId, message);
             return Response.json({ success: true });
           } catch (err) {
+            console.error(`[HTTP POLLING] Send message error:`, err);
             return Response.json({ success: false, error: 'Invalid request' }, { status: 400 });
           }
         }
@@ -443,6 +446,7 @@ export class RoomDurableObject {
 
   private broadcastToAll(message: any, excludeWs?: WebSocket) {
     const rawMsg = JSON.stringify(message);
+    console.log(`[DURABLE OBJECT] Broadcasting to ${this.sessions.size} sessions, message type: ${message.type}`);
     let sentCount = 0;
     
     console.log(`[DURABLE OBJECT BROADCAST] Type: ${message.type}, Sessions: ${this.sessions.size}`);
