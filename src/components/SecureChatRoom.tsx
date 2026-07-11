@@ -953,7 +953,14 @@ export default function SecureChatRoom({
       // Join via HTTP
       const joinViaHttp = async () => {
         try {
-          const baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+          let baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+          // Convert wss:// to https:// for HTTP polling
+          if (baseUrl.startsWith('wss://')) {
+            baseUrl = baseUrl.replace('wss://', 'https://');
+          } else if (baseUrl.startsWith('ws://')) {
+            baseUrl = baseUrl.replace('ws://', 'http://');
+          }
+          console.log(`[HTTP POLLING] Join via HTTP to ${baseUrl}/api/poll/${encodeURIComponent(roomId)}`);
           const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -962,6 +969,7 @@ export default function SecureChatRoom({
 
           if (response.ok) {
             const data = await response.json();
+            console.log(`[HTTP POLLING] Join response:`, data);
             if (data.success && data.data) {
               setRealOnlineUsers(data.data.users || []);
               if (data.data.messages && data.data.messages.length > 0) {
@@ -982,6 +990,8 @@ export default function SecureChatRoom({
                 setMessages(decryptedMsgs);
               }
             }
+          } else {
+            console.error(`[HTTP POLLING] Join HTTP error: ${response.status}`);
           }
         } catch (err) {
           console.error('HTTP polling join failed:', err);
@@ -991,11 +1001,19 @@ export default function SecureChatRoom({
       // Poll for new messages
       const pollMessages = async () => {
         try {
-          const baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+          let baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+          // Convert wss:// to https:// for HTTP polling
+          if (baseUrl.startsWith('wss://')) {
+            baseUrl = baseUrl.replace('wss://', 'https://');
+          } else if (baseUrl.startsWith('ws://')) {
+            baseUrl = baseUrl.replace('ws://', 'http://');
+          }
+          console.log(`[HTTP POLLING] Polling messages from ${baseUrl}/api/poll/${encodeURIComponent(roomId)}`);
           const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=get_messages&userId=${myUserId}`);
 
           if (response.ok) {
             const data = await response.json();
+            console.log(`[HTTP POLLING] Poll response:`, data);
             if (data.type === 'poll_response' && data.data) {
               setRealOnlineUsers(data.data.users || []);
               if (data.data.messages && data.data.messages.length > 0) {
@@ -1013,9 +1031,16 @@ export default function SecureChatRoom({
                     return m;
                   })
                 );
-                setMessages(decryptedMsgs);
+                // Merge new messages instead of replacing all messages
+                setMessages(prev => {
+                  const existingIds = new Set(prev.map(m => m.id));
+                  const newMessages = decryptedMsgs.filter(m => !existingIds.has(m.id));
+                  return [...prev, ...newMessages];
+                });
               }
             }
+          } else {
+            console.error(`[HTTP POLLING] Poll HTTP error: ${response.status}`);
           }
         } catch (err) {
           console.error('HTTP polling failed:', err);
@@ -1025,7 +1050,14 @@ export default function SecureChatRoom({
       // Send message via HTTP
       const sendMessageViaHttp = async (message: ChatMessage) => {
         try {
-          const baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+          let baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+          // Convert wss:// to https:// for HTTP polling
+          if (baseUrl.startsWith('wss://')) {
+            baseUrl = baseUrl.replace('wss://', 'https://');
+          } else if (baseUrl.startsWith('ws://')) {
+            baseUrl = baseUrl.replace('ws://', 'http://');
+          }
+          console.log(`[HTTP POLLING] Sending message to ${baseUrl}/api/poll/${encodeURIComponent(roomId)}`);
           const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=send_message&userId=${myUserId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1034,10 +1066,15 @@ export default function SecureChatRoom({
 
           if (response.ok) {
             const data = await response.json();
+            console.log(`[HTTP POLLING] Send message response:`, data);
             if (data.success) {
               // Add message locally
               setMessages(prev => [...prev, message]);
+            } else {
+              console.error(`[HTTP POLLING] Send message failed:`, data.error);
             }
+          } else {
+            console.error(`[HTTP POLLING] Send message HTTP error: ${response.status}`);
           }
         } catch (err) {
           console.error('HTTP send message failed:', err);
