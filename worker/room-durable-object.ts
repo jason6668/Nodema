@@ -124,6 +124,76 @@ export class RoomDurableObject {
       return new Response(null, { status: 101, webSocket: client });
     }
 
+    // Handle HTTP polling for mobile compatibility
+    if (path.startsWith('/api/poll')) {
+      const method = url.searchParams.get('method');
+      const userId = url.searchParams.get('userId');
+
+      if (method === 'get_messages') {
+        // Return current messages for polling
+        return Response.json({
+          type: 'poll_response',
+          data: {
+            messages: this.messages,
+            users: Array.from(this.users.values()),
+            activeThemeId: this.activeThemeId,
+            isLiveActive: this.isLiveActive,
+            liveStreamer: this.liveStreamer,
+            activeCoHosts: this.activeCoHosts,
+            currentPoll: this.currentPoll
+          }
+        });
+      }
+
+      if (method === 'send_message' && userId) {
+        // Handle message sending via HTTP POST
+        if (request.method === 'POST') {
+          try {
+            const body = await request.json();
+            const message = body.message;
+            await this.handleMessageBroadcast(userId, message);
+            return Response.json({ success: true });
+          } catch (err) {
+            return Response.json({ success: false, error: 'Invalid request' }, { status: 400 });
+          }
+        }
+      }
+
+      if (method === 'join' && userId) {
+        // Handle join via HTTP
+        if (request.method === 'POST') {
+          try {
+            const body = await request.json();
+            const userProfile = {
+              id: userId,
+              nickname: body.nickname || "未知用户",
+              avatarUrl: body.avatarUrl || ""
+            };
+
+            this.users.set(userId, userProfile);
+            await this.storage.put("users", Object.fromEntries(this.users));
+
+            return Response.json({
+              success: true,
+              data: {
+                messages: this.messages,
+                users: Array.from(this.users.values()),
+                activeThemeId: this.activeThemeId,
+                isLiveActive: this.isLiveActive,
+                liveStreamer: this.liveStreamer,
+                activeCoHosts: this.activeCoHosts,
+                currentPoll: this.currentPoll
+              }
+            });
+          } catch (err) {
+            return Response.json({ success: false, error: 'Invalid request' }, { status: 400 });
+          }
+        }
+      }
+
+      return Response.json({ success: false, error: 'Invalid method' }, { status: 400 });
+    }
+
     return new Response('Not found', { status: 404 });
   }
 

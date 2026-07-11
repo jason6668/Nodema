@@ -33,6 +33,20 @@ export default {
       return Response.json({ status: "ok", service: "Cloudflare Workers WebSocket" });
     }
 
+    // HTTP polling endpoints for mobile compatibility
+    if (path.startsWith('/api/poll/')) {
+      const roomId = path.split('/')[3];
+      if (!roomId) {
+        return new Response('Room ID required', { status: 400 });
+      }
+
+      const id = env.ROOM_DURABLE_OBJECT.idFromName(roomId);
+      const stub = env.ROOM_DURABLE_OBJECT.get(id);
+
+      // Forward to Durable Object for polling
+      return stub.fetch(request);
+    }
+
     // Serve static files for Pages
     return new Response('NodeCrypt WebSocket Server on Cloudflare Workers', { status: 200 });
   }

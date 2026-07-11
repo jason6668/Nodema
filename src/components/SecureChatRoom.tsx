@@ -930,11 +930,125 @@ export default function SecureChatRoom({
     let isDisposed = false;
     let reconnectAttempts = 0;
 
-    const welcomeContent = lang === 'en' 
+    const welcomeContent = lang === 'en'
       ? `Successfully entered Zero-Knowledge E2EE room: "${roomId}". All messages are encrypted locally using AES-GCM-256 with key "${'*'.repeat(passphrase.length)}". True zero-knowledge security.`
       : lang === 'es'
       ? `Entró con éxito a la sala segura E2EE: "${roomId}". Todos los mensajes se cifran localmente con AES-GCM-256 usando la clave "${'*'.repeat(passphrase.length)}".`
       : `成功进入零知识E2EE加密房间: 「${roomId}」。所有消息都在本地通过密钥「${'*'.repeat(passphrase.length)}」进行 AES-GCM-256 对称加解密。服务器只转发不可破解的密文，真正零知晓。`;
+
+    // HTTP polling fallback for mobile devices when WebSocket fails
+    const startHttpPolling = () => {
+      console.log('Starting HTTP polling for mobile compatibility');
+      setConnectionStatus('connected');
+      setDebugInfo('Using HTTP polling mode');
+
+      let pollingInterval: number | null = null;
+
+      // Join via HTTP
+      const joinViaHttp = async () => {
+        try {
+          const baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+          const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname, avatarUrl })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              setRealOnlineUsers(data.data.users || []);
+              if (data.data.messages && data.data.messages.length > 0) {
+                const decryptedMsgs = await Promise.all(
+                  data.data.messages.map(async (m: ChatMessage) => {
+                    if (m.userId === myUserId) return m;
+                    if (m.encryptedContent && !m.isBurned) {
+                      try {
+                        const decrypted = await decryptText(m.encryptedContent, passphrase);
+                        return { ...m, content: decrypted };
+                      } catch {
+                        return { ...m, content: "🔒 [密码错误：无法解密此消息]" };
+                      }
+                    }
+                    return m;
+                  })
+                );
+                setMessages(decryptedMsgs);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('HTTP polling join failed:', err);
+        }
+      };
+
+      // Poll for new messages
+      const pollMessages = async () => {
+        try {
+          const baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+          const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=get_messages&userId=${myUserId}`);
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.type === 'poll_response' && data.data) {
+              setRealOnlineUsers(data.data.users || []);
+              if (data.data.messages && data.data.messages.length > 0) {
+                const decryptedMsgs = await Promise.all(
+                  data.data.messages.map(async (m: ChatMessage) => {
+                    if (m.userId === myUserId) return m;
+                    if (m.encryptedContent && !m.isBurned) {
+                      try {
+                        const decrypted = await decryptText(m.encryptedContent, passphrase);
+                        return { ...m, content: decrypted };
+                      } catch {
+                        return { ...m, content: "🔒 [密码错误：无法解密此消息]" };
+                      }
+                    }
+                    return m;
+                  })
+                );
+                setMessages(decryptedMsgs);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('HTTP polling failed:', err);
+        }
+      };
+
+      // Send message via HTTP
+      const sendMessageViaHttp = async (message: ChatMessage) => {
+        try {
+          const baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+          const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=send_message&userId=${myUserId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              // Add message locally
+              setMessages(prev => [...prev, message]);
+            }
+          }
+        } catch (err) {
+          console.error('HTTP send message failed:', err);
+        }
+      };
+
+      // Start polling
+      joinViaHttp();
+      pollingInterval = window.setInterval(pollMessages, 3000); // Poll every 3 seconds
+
+      // Cleanup
+      return () => {
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+        }
+      };
+    };
 
     const connectWs = () => {
       if (isDisposed) return;
@@ -988,12 +1102,13 @@ export default function SecureChatRoom({
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
 
-      // iOS Safari specific: handle connection timeout
+      // iOS Safari specific: handle connection timeout and fallback to polling
       const connectionTimeout = setTimeout(() => {
         if (socket.readyState === WebSocket.CONNECTING) {
-          console.error('WebSocket connection timeout for iOS Safari');
+          console.error('WebSocket connection timeout for iOS Safari, falling back to HTTP polling');
           socket.close();
-          alert('连接超时: iOS Safari连接超时，请重试');
+          // Fallback to HTTP polling for mobile
+          startHttpPolling();
         }
       }, 10000); // 10 second timeout for mobile
 
