@@ -990,7 +990,7 @@ export default function SecureChatRoom({
             };
             xhr.onerror = () => reject(new Error('Network error'));
             xhr.ontimeout = () => reject(new Error('Request timeout'));
-            xhr.timeout = 30000; // 30 second timeout
+            xhr.timeout = 0; // No timeout to allow slow connections
             xhr.send(JSON.stringify({ nickname, avatarUrl }));
           });
 
