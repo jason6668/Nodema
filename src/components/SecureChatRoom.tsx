@@ -968,20 +968,13 @@ export default function SecureChatRoom({
           const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`;
           alert(`正在连接房间: ${roomId}\nURL: ${url}\n用户ID: ${myUserId}`);
 
-          // Add timeout and detailed error handling
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for mobile networks
-
           alert(`开始发送HTTP请求...`);
 
           const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nickname, avatarUrl }),
-            signal: controller.signal
+            body: JSON.stringify({ nickname, avatarUrl })
           });
-
-          clearTimeout(timeoutId);
 
           alert(`HTTP响应状态: ${response.status}`);
 
