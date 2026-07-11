@@ -956,10 +956,22 @@ export default function SecureChatRoom({
         }
         console.log('Using WebSocket URL from environment variable:', wsBaseUrl);
       } else if (typeof window !== 'undefined') {
-        // Force local/LAN connection only
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        wsBaseUrl = `${protocol}//${window.location.host}`;
-        console.log('Using local/LAN WebSocket server:', wsBaseUrl);
+        // Detect mobile device
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+          // For mobile devices, try to use a different approach or show error
+          console.log('Mobile device detected, WebSocket may have limitations');
+          // Force local/LAN connection for mobile
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          wsBaseUrl = `${protocol}//${window.location.host}`;
+          console.log('Mobile using WebSocket server:', wsBaseUrl);
+        } else {
+          // Desktop - force local/LAN connection
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          wsBaseUrl = `${protocol}//${window.location.host}`;
+          console.log('Desktop using WebSocket server:', wsBaseUrl);
+        }
       } else {
         // Default fallback
         wsBaseUrl = "ws://localhost:3000";
@@ -1222,8 +1234,12 @@ export default function SecureChatRoom({
 
       socket.onerror = (err) => {
         console.error('WebSocket connection error:', err);
+        console.error('WebSocket URL:', wsUrl);
+        console.error('User Agent:', navigator.userAgent);
         setConnectionStatus('disconnected');
-        setDebugInfo(`Connection error`);
+        setDebugInfo(`Error: ${wsUrl}`);
+        // Show alert for mobile debugging
+        alert(`连接错误: 尝试连接 ${wsUrl} 失败\nUser Agent: ${navigator.userAgent}`);
         // Don't immediately close - let onclose handle reconnection
       };
     };
