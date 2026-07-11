@@ -970,7 +970,7 @@ export default function SecureChatRoom({
 
           // Add timeout and detailed error handling
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for mobile networks
 
           alert(`开始发送HTTP请求...`);
 
