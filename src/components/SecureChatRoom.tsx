@@ -970,16 +970,34 @@ export default function SecureChatRoom({
 
           alert(`开始发送HTTP请求...`);
 
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nickname, avatarUrl })
+          // Use XMLHttpRequest for better mobile compatibility
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', url, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+
+          const response = await new Promise<any>((resolve, reject) => {
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  const data = JSON.parse(xhr.responseText);
+                  resolve({ ok: true, status: xhr.status, data });
+                } catch (e) {
+                  reject(new Error('Failed to parse response'));
+                }
+              } else {
+                reject(new Error(`HTTP ${xhr.status}`));
+              }
+            };
+            xhr.onerror = () => reject(new Error('Network error'));
+            xhr.ontimeout = () => reject(new Error('Request timeout'));
+            xhr.timeout = 30000; // 30 second timeout
+            xhr.send(JSON.stringify({ nickname, avatarUrl }));
           });
 
           alert(`HTTP响应状态: ${response.status}`);
 
           if (response.ok) {
-            const data = await response.json();
+            const data = response.data;
             console.log(`[HTTP POLLING] Join response:`, data);
             alert(`加入成功! 在线用户数: ${data.data?.users?.length || 0}`);
             if (data.success && data.data) {
@@ -1013,7 +1031,7 @@ export default function SecureChatRoom({
           }
         } catch (err: any) {
           console.error('HTTP polling join failed:', err);
-          alert(`连接错误: ${err.message || err}\n错误名称: ${err.name}\n错误详情: ${JSON.stringify(err)}`);
+          alert(`连接错误: ${err.message || err}\n错误名称: ${err.name}`);
         }
       };
 
