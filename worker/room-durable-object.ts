@@ -90,6 +90,7 @@ export class RoomDurableObject {
       console.log(`[DURABLE OBJECT] WebSocket upgrade request`);
       const { 0: client, 1: server } = Object.values(new WebSocketPair());
 
+      // Accept with no subprotocol for maximum compatibility
       server.accept();
       console.log(`[DURABLE OBJECT] WebSocket accepted`);
 

@@ -984,10 +984,21 @@ export default function SecureChatRoom({
       const wsUrl = `${normalizedBase}/ws/${encodeURIComponent(roomId)}`;
       console.log('Connecting to NodeCrypt WebSocket server:', wsUrl);
       
+      // iOS Safari compatibility: use WebSocket with specific options
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
 
+      // iOS Safari specific: handle connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (socket.readyState === WebSocket.CONNECTING) {
+          console.error('WebSocket connection timeout for iOS Safari');
+          socket.close();
+          alert('连接超时: iOS Safari连接超时，请重试');
+        }
+      }, 10000); // 10 second timeout for mobile
+
       socket.onopen = () => {
+        clearTimeout(connectionTimeout);
         console.log('WebSocket connection successfully opened!');
         setConnectionStatus('connected');
         setDebugInfo(`Connected to ${wsUrl}`);
