@@ -129,6 +129,24 @@ export class RoomDurableObject {
       const method = url.searchParams.get('method');
       const userId = url.searchParams.get('userId');
 
+      // Handle CORS preflight request
+      if (request.method === 'OPTIONS') {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        });
+      }
+
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      };
+
       if (method === 'get_messages') {
         // Return current messages for polling
         console.log(`[HTTP POLLING] Getting messages for ${userId}, current messages: ${this.messages.length}`);
@@ -143,7 +161,7 @@ export class RoomDurableObject {
             activeCoHosts: this.activeCoHosts,
             currentPoll: this.currentPoll
           }
-        });
+        }, { headers: corsHeaders });
       }
 
       if (method === 'send_message' && userId) {
@@ -154,10 +172,10 @@ export class RoomDurableObject {
             const message = body.message;
             console.log(`[HTTP POLLING] Sending message from ${userId}, messageId: ${message.id}`);
             await this.handleMessageBroadcast(userId, message);
-            return Response.json({ success: true });
+            return Response.json({ success: true }, { headers: corsHeaders });
           } catch (err) {
             console.error(`[HTTP POLLING] Send message error:`, err);
-            return Response.json({ success: false, error: 'Invalid request' }, { status: 400 });
+            return Response.json({ success: false, error: 'Invalid request' }, { status: 400, headers: corsHeaders });
           }
         }
       }
@@ -189,15 +207,15 @@ export class RoomDurableObject {
                 activeCoHosts: this.activeCoHosts,
                 currentPoll: this.currentPoll
               }
-            });
+            }, { headers: corsHeaders });
           } catch (err) {
             console.error(`[HTTP POLLING JOIN] Error:`, err);
-            return Response.json({ success: false, error: 'Invalid request' }, { status: 400 });
+            return Response.json({ success: false, error: 'Invalid request' }, { status: 400, headers: corsHeaders });
           }
         }
       }
 
-      return Response.json({ success: false, error: 'Invalid method' }, { status: 400 });
+      return Response.json({ success: false, error: 'Invalid method' }, { status: 400, headers: corsHeaders });
     }
 
     return new Response('Not found', { status: 404 });
