@@ -1053,10 +1053,21 @@ export default function SecureChatRoom({
     const connectWs = () => {
       if (isDisposed) return;
 
+      // Detect mobile device first
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      // For mobile devices, directly use HTTP polling
+      if (isMobile) {
+        console.log('Mobile device detected, using HTTP polling directly');
+        startHttpPolling();
+        return;
+      }
+
       // Support split deployment: static frontend + separate WS backend
       // Priority: 1. Environment variable VITE_WS_URL, 2. Local server in dev, 3. Cloudflare Workers
       let wsBaseUrl: string;
-      
+      let connectionTimeout: number | null = null;
+
       // Check for environment variable first (for Cloudflare Pages deployment)
       if (import.meta.env.VITE_WS_URL) {
         // Convert https:// to wss:// and http:// to ws:// if needed
@@ -1070,22 +1081,10 @@ export default function SecureChatRoom({
         }
         console.log('Using WebSocket URL from environment variable:', wsBaseUrl);
       } else if (typeof window !== 'undefined') {
-        // Detect mobile device
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        if (isMobile) {
-          // For mobile devices, try to use a different approach or show error
-          console.log('Mobile device detected, WebSocket may have limitations');
-          // Force local/LAN connection for mobile
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          wsBaseUrl = `${protocol}//${window.location.host}`;
-          console.log('Mobile using WebSocket server:', wsBaseUrl);
-        } else {
-          // Desktop - force local/LAN connection
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          wsBaseUrl = `${protocol}//${window.location.host}`;
-          console.log('Desktop using WebSocket server:', wsBaseUrl);
-        }
+        // Desktop - force local/LAN connection
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        wsBaseUrl = `${protocol}//${window.location.host}`;
+        console.log('Desktop using WebSocket server:', wsBaseUrl);
       } else {
         // Default fallback
         wsBaseUrl = "ws://localhost:3000";
@@ -1097,13 +1096,13 @@ export default function SecureChatRoom({
       const normalizedBase = wsBaseUrl.replace(/\/+$/, '');
       const wsUrl = `${normalizedBase}/ws/${encodeURIComponent(roomId)}`;
       console.log('Connecting to NodeCrypt WebSocket server:', wsUrl);
-      
+
       // iOS Safari compatibility: use WebSocket with specific options
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
 
       // iOS Safari specific: handle connection timeout and fallback to polling
-      const connectionTimeout = setTimeout(() => {
+      connectionTimeout = window.setTimeout(() => {
         if (socket.readyState === WebSocket.CONNECTING) {
           console.error('WebSocket connection timeout for iOS Safari, falling back to HTTP polling');
           socket.close();
@@ -1365,7 +1364,10 @@ export default function SecureChatRoom({
         setConnectionStatus('disconnected');
         setDebugInfo(`Error: ${wsUrl}`);
         // Show alert for mobile debugging
-        alert(`连接错误: 尝试连接 ${wsUrl} 失败\nUser Agent: ${navigator.userAgent}`);
+        alert(`连接错误: 尝试连接 ${wsUrl} 失败\nUser Agent: ${navigator.userAgent}\n正在切换到HTTP轮询模式...`);
+        // Fallback to HTTP polling for mobile
+        clearTimeout(connectionTimeout);
+        startHttpPolling();
         // Don't immediately close - let onclose handle reconnection
       };
     };
