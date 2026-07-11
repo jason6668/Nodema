@@ -953,55 +953,59 @@ export default function SecureChatRoom({
       // Join via HTTP
       const joinViaHttp = async () => {
         try {
-          // Force use Cloudflare Worker URL for HTTP polling
-          const workerUrl = "https://nodecrypt.comeonsad.workers.dev";
-          console.log(`[HTTP POLLING] Join via HTTP to ${workerUrl}/api/poll/${encodeURIComponent(roomId)}`);
-          console.log(`[HTTP POLLING] Join payload:`, { userId: myUserId, nickname, avatarUrl });
-          console.log(`[HTTP POLLING] Environment VITE_WS_URL:`, import.meta.env.VITE_WS_URL);
-          console.log(`[HTTP POLLING] Window origin:`, window.location.origin);
+          // Try multiple server options for better connectivity
+          const serverOptions = [
+            "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker
+            window.location.origin, // Current domain (if self-hosted)
+            "http://localhost:3000", // Local development
+          ];
 
-          const url = `${workerUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`;
-          alert(`正在连接房间: ${roomId}\nURL: ${url}\n用户ID: ${myUserId}`);
+          let lastError = null;
+          let successResponse = null;
 
-          alert(`开始发送HTTP请求...`);
+          for (const baseUrl of serverOptions) {
+            try {
+              console.log(`[HTTP POLLING] Trying server: ${baseUrl}`);
+              const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`;
 
-          // Use XMLHttpRequest for better mobile compatibility
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', url, true);
-          xhr.setRequestHeader('Content-Type', 'application/json');
+              const xhr = new XMLHttpRequest();
+              xhr.open('POST', url, true);
+              xhr.setRequestHeader('Content-Type', 'application/json');
 
-          const response = await new Promise<any>((resolve, reject) => {
-            xhr.onload = () => {
-              alert(`XHR onload: status=${xhr.status}, responseText=${xhr.responseText}`);
-              if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                  const data = JSON.parse(xhr.responseText);
-                  resolve({ ok: true, status: xhr.status, data });
-                } catch (e) {
-                  reject(new Error('Failed to parse response'));
-                }
-              } else {
-                reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
+              const response = await new Promise<any>((resolve, reject) => {
+                xhr.onload = () => {
+                  if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                      const data = JSON.parse(xhr.responseText);
+                      resolve({ ok: true, status: xhr.status, data });
+                    } catch (e) {
+                      reject(new Error('Failed to parse response'));
+                    }
+                  } else {
+                    reject(new Error(`HTTP ${xhr.status}`));
+                  }
+                };
+                xhr.onerror = () => reject(new Error('Network error'));
+                xhr.ontimeout = () => reject(new Error('Request timeout'));
+                xhr.timeout = 10000; // 10 second timeout per server
+                xhr.send(JSON.stringify({ nickname, avatarUrl }));
+              });
+
+              if (response.ok) {
+                successResponse = response;
+                console.log(`[HTTP POLLING] Successfully connected to: ${baseUrl}`);
+                break;
               }
-            };
-            xhr.onerror = () => {
-              alert(`XHR onerror triggered`);
-              reject(new Error('Network error'));
-            };
-            xhr.ontimeout = () => {
-              alert(`XHR ontimeout triggered`);
-              reject(new Error('Request timeout'));
-            };
-            xhr.timeout = 0; // No timeout to allow slow connections
-            xhr.send(JSON.stringify({ nickname, avatarUrl }));
-          });
+            } catch (err) {
+              console.log(`[HTTP POLLING] Failed to connect to ${baseUrl}:`, err);
+              lastError = err;
+              continue;
+            }
+          }
 
-          alert(`HTTP响应状态: ${response.status}`);
-
-          if (response.ok) {
-            const data = response.data;
+          if (successResponse) {
+            const data = successResponse.data;
             console.log(`[HTTP POLLING] Join response:`, data);
-            alert(`加入成功! 在线用户数: ${data.data?.users?.length || 0}`);
             if (data.success && data.data) {
               const users = data.data.users || [];
               console.log(`[HTTP POLLING] Setting online users:`, users);
@@ -1023,58 +1027,71 @@ export default function SecureChatRoom({
                 );
                 setMessages(decryptedMsgs);
               }
-            } else {
-              console.error(`[HTTP POLLING] Join failed:`, data);
-              alert(`加入失败: ${JSON.stringify(data)}`);
             }
           } else {
-            console.error(`[HTTP POLLING] Join HTTP error: ${response.status}`);
-            alert(`HTTP错误: ${response.status}`);
+            throw lastError || new Error('All servers failed');
           }
         } catch (err: any) {
           console.error('HTTP polling join failed:', err);
-          alert(`连接错误: ${err.message || err}\n错误名称: ${err.name}`);
+          alert(`连接失败: 所有服务器都无法连接\n错误: ${err.message}`);
         }
       };
 
       // Poll for new messages
       const pollMessages = async () => {
         try {
-          // Force use Cloudflare Worker URL for HTTP polling
-          const workerUrl = "https://nodecrypt.comeonsad.workers.dev";
-          console.log(`[HTTP POLLING] Polling messages from ${workerUrl}/api/poll/${encodeURIComponent(roomId)}`);
-          const response = await fetch(`${workerUrl}/api/poll/${encodeURIComponent(roomId)}?method=get_messages&userId=${myUserId}`);
+          // Try multiple server options for better connectivity
+          const serverOptions = [
+            "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker
+            window.location.origin, // Current domain (if self-hosted)
+            "http://localhost:3000", // Local development
+          ];
 
-          if (response.ok) {
-            const data = await response.json();
-            console.log(`[HTTP POLLING] Poll response:`, data);
-            if (data.type === 'poll_response' && data.data) {
-              setRealOnlineUsers(data.data.users || []);
-              if (data.data.messages && data.data.messages.length > 0) {
-                const decryptedMsgs = await Promise.all(
-                  data.data.messages.map(async (m: ChatMessage) => {
-                    if (m.userId === myUserId) return m;
-                    if (m.encryptedContent && !m.isBurned) {
-                      try {
-                        const decrypted = await decryptText(m.encryptedContent, passphrase);
-                        return { ...m, content: decrypted };
-                      } catch {
-                        return { ...m, content: "🔒 [密码错误：无法解密此消息]" };
-                      }
-                    }
-                    return m;
-                  })
-                );
-                // Merge new messages instead of replacing all messages
-                setMessages(prev => {
-                  const existingIds = new Set(prev.map(m => m.id));
-                  const newMessages = decryptedMsgs.filter(m => !existingIds.has(m.id));
-                  return [...prev, ...newMessages];
-                });
+          let lastError = null;
+          let successResponse = null;
+
+          for (const baseUrl of serverOptions) {
+            try {
+              console.log(`[HTTP POLLING] Polling from server: ${baseUrl}`);
+              const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=get_messages&userId=${myUserId}`;
+              const response = await fetch(url);
+
+              if (response.ok) {
+                const data = await response.json();
+                console.log(`[HTTP POLLING] Poll response from ${baseUrl}:`, data);
+                if (data.type === 'poll_response' && data.data) {
+                  setRealOnlineUsers(data.data.users || []);
+                  if (data.data.messages && data.data.messages.length > 0) {
+                    const decryptedMsgs = await Promise.all(
+                      data.data.messages.map(async (m: ChatMessage) => {
+                        if (m.userId === myUserId) return m;
+                        if (m.encryptedContent && !m.isBurned) {
+                          try {
+                            const decrypted = await decryptText(m.encryptedContent, passphrase);
+                            return { ...m, content: decrypted };
+                          } catch {
+                            return { ...m, content: "🔒 [密码错误：无法解密此消息]" };
+                          }
+                        }
+                        return m;
+                      })
+                    );
+                    // Merge new messages instead of replacing all messages
+                    setMessages(prev => {
+                      const existingIds = new Set(prev.map(m => m.id));
+                      const newMessages = decryptedMsgs.filter(m => !existingIds.has(m.id));
+                      return [...prev, ...newMessages];
+                    });
+                  }
+                  successResponse = data;
+                  break;
+                }
               }
+            } catch (err) {
+              console.log(`[HTTP POLLING] Failed to poll from ${baseUrl}:`, err);
+              lastError = err;
+              continue;
             }
-          } else {
-            console.error(`[HTTP POLLING] Poll HTTP error: ${response.status}`);
           }
         } catch (err) {
           console.error('HTTP polling failed:', err);
@@ -1084,26 +1101,45 @@ export default function SecureChatRoom({
       // Send message via HTTP
       const sendMessageViaHttp = async (message: ChatMessage) => {
         try {
-          // Force use Cloudflare Worker URL for HTTP polling
-          const workerUrl = "https://nodecrypt.comeonsad.workers.dev";
-          console.log(`[HTTP POLLING] Sending message to ${workerUrl}/api/poll/${encodeURIComponent(roomId)}`);
-          const response = await fetch(`${workerUrl}/api/poll/${encodeURIComponent(roomId)}?method=send_message&userId=${myUserId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
-          });
+          // Try multiple server options for better connectivity
+          const serverOptions = [
+            "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker
+            window.location.origin, // Current domain (if self-hosted)
+            "http://localhost:3000", // Local development
+          ];
 
-          if (response.ok) {
-            const data = await response.json();
-            console.log(`[HTTP POLLING] Send message response:`, data);
-            if (data.success) {
-              // Add message locally
-              setMessages(prev => [...prev, message]);
-            } else {
-              console.error(`[HTTP POLLING] Send message failed:`, data.error);
+          let lastError = null;
+          let successResponse = null;
+
+          for (const baseUrl of serverOptions) {
+            try {
+              console.log(`[HTTP POLLING] Sending message to server: ${baseUrl}`);
+              const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=send_message&userId=${myUserId}`;
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                console.log(`[HTTP POLLING] Send message response from ${baseUrl}:`, data);
+                if (data.success) {
+                  // Add message locally
+                  setMessages(prev => [...prev, message]);
+                  successResponse = data;
+                  break;
+                }
+              }
+            } catch (err) {
+              console.log(`[HTTP POLLING] Failed to send message to ${baseUrl}:`, err);
+              lastError = err;
+              continue;
             }
-          } else {
-            console.error(`[HTTP POLLING] Send message HTTP error: ${response.status}`);
+          }
+
+          if (!successResponse) {
+            console.error('HTTP send message failed:', lastError);
           }
         } catch (err) {
           console.error('HTTP send message failed:', err);
