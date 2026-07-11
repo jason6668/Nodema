@@ -953,19 +953,14 @@ export default function SecureChatRoom({
       // Join via HTTP
       const joinViaHttp = async () => {
         try {
-          let baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
-          // Convert wss:// to https:// for HTTP polling
-          if (baseUrl.startsWith('wss://')) {
-            baseUrl = baseUrl.replace('wss://', 'https://');
-          } else if (baseUrl.startsWith('ws://')) {
-            baseUrl = baseUrl.replace('ws://', 'http://');
-          }
-          console.log(`[HTTP POLLING] Join via HTTP to ${baseUrl}/api/poll/${encodeURIComponent(roomId)}`);
+          // Force use Cloudflare Worker URL for HTTP polling
+          const workerUrl = "https://nodecrypt.comeonsad.workers.dev";
+          console.log(`[HTTP POLLING] Join via HTTP to ${workerUrl}/api/poll/${encodeURIComponent(roomId)}`);
           console.log(`[HTTP POLLING] Join payload:`, { userId: myUserId, nickname, avatarUrl });
           console.log(`[HTTP POLLING] Environment VITE_WS_URL:`, import.meta.env.VITE_WS_URL);
           console.log(`[HTTP POLLING] Window origin:`, window.location.origin);
 
-          const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`;
+          const url = `${workerUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`;
           alert(`正在连接房间: ${roomId}\nURL: ${url}\n用户ID: ${myUserId}`);
 
           alert(`开始发送HTTP请求...`);
@@ -977,6 +972,7 @@ export default function SecureChatRoom({
 
           const response = await new Promise<any>((resolve, reject) => {
             xhr.onload = () => {
+              alert(`XHR onload: status=${xhr.status}, responseText=${xhr.responseText}`);
               if (xhr.status >= 200 && xhr.status < 300) {
                 try {
                   const data = JSON.parse(xhr.responseText);
@@ -985,11 +981,17 @@ export default function SecureChatRoom({
                   reject(new Error('Failed to parse response'));
                 }
               } else {
-                reject(new Error(`HTTP ${xhr.status}`));
+                reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
               }
             };
-            xhr.onerror = () => reject(new Error('Network error'));
-            xhr.ontimeout = () => reject(new Error('Request timeout'));
+            xhr.onerror = () => {
+              alert(`XHR onerror triggered`);
+              reject(new Error('Network error'));
+            };
+            xhr.ontimeout = () => {
+              alert(`XHR ontimeout triggered`);
+              reject(new Error('Request timeout'));
+            };
             xhr.timeout = 0; // No timeout to allow slow connections
             xhr.send(JSON.stringify({ nickname, avatarUrl }));
           });
@@ -1038,15 +1040,10 @@ export default function SecureChatRoom({
       // Poll for new messages
       const pollMessages = async () => {
         try {
-          let baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
-          // Convert wss:// to https:// for HTTP polling
-          if (baseUrl.startsWith('wss://')) {
-            baseUrl = baseUrl.replace('wss://', 'https://');
-          } else if (baseUrl.startsWith('ws://')) {
-            baseUrl = baseUrl.replace('ws://', 'http://');
-          }
-          console.log(`[HTTP POLLING] Polling messages from ${baseUrl}/api/poll/${encodeURIComponent(roomId)}`);
-          const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=get_messages&userId=${myUserId}`);
+          // Force use Cloudflare Worker URL for HTTP polling
+          const workerUrl = "https://nodecrypt.comeonsad.workers.dev";
+          console.log(`[HTTP POLLING] Polling messages from ${workerUrl}/api/poll/${encodeURIComponent(roomId)}`);
+          const response = await fetch(`${workerUrl}/api/poll/${encodeURIComponent(roomId)}?method=get_messages&userId=${myUserId}`);
 
           if (response.ok) {
             const data = await response.json();
@@ -1087,15 +1084,10 @@ export default function SecureChatRoom({
       // Send message via HTTP
       const sendMessageViaHttp = async (message: ChatMessage) => {
         try {
-          let baseUrl = import.meta.env.VITE_WS_URL || window.location.origin;
-          // Convert wss:// to https:// for HTTP polling
-          if (baseUrl.startsWith('wss://')) {
-            baseUrl = baseUrl.replace('wss://', 'https://');
-          } else if (baseUrl.startsWith('ws://')) {
-            baseUrl = baseUrl.replace('ws://', 'http://');
-          }
-          console.log(`[HTTP POLLING] Sending message to ${baseUrl}/api/poll/${encodeURIComponent(roomId)}`);
-          const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=send_message&userId=${myUserId}`, {
+          // Force use Cloudflare Worker URL for HTTP polling
+          const workerUrl = "https://nodecrypt.comeonsad.workers.dev";
+          console.log(`[HTTP POLLING] Sending message to ${workerUrl}/api/poll/${encodeURIComponent(roomId)}`);
+          const response = await fetch(`${workerUrl}/api/poll/${encodeURIComponent(roomId)}?method=send_message&userId=${myUserId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message })
