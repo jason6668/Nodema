@@ -962,15 +962,24 @@ export default function SecureChatRoom({
           }
           console.log(`[HTTP POLLING] Join via HTTP to ${baseUrl}/api/poll/${encodeURIComponent(roomId)}`);
           console.log(`[HTTP POLLING] Join payload:`, { userId: myUserId, nickname, avatarUrl });
-          const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`, {
+          console.log(`[HTTP POLLING] Environment VITE_WS_URL:`, import.meta.env.VITE_WS_URL);
+          console.log(`[HTTP POLLING] Window origin:`, window.location.origin);
+
+          const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`;
+          alert(`正在连接房间: ${roomId}\nURL: ${url}\n用户ID: ${myUserId}`);
+
+          const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nickname, avatarUrl })
           });
 
+          alert(`HTTP响应状态: ${response.status}`);
+
           if (response.ok) {
             const data = await response.json();
             console.log(`[HTTP POLLING] Join response:`, data);
+            alert(`加入成功! 在线用户数: ${data.data?.users?.length || 0}`);
             if (data.success && data.data) {
               const users = data.data.users || [];
               console.log(`[HTTP POLLING] Setting online users:`, users);
@@ -994,12 +1003,15 @@ export default function SecureChatRoom({
               }
             } else {
               console.error(`[HTTP POLLING] Join failed:`, data);
+              alert(`加入失败: ${JSON.stringify(data)}`);
             }
           } else {
             console.error(`[HTTP POLLING] Join HTTP error: ${response.status}`);
+            alert(`HTTP错误: ${response.status}`);
           }
         } catch (err) {
           console.error('HTTP polling join failed:', err);
+          alert(`连接错误: ${err}`);
         }
       };
 
