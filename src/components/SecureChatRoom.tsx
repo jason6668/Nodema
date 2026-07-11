@@ -961,6 +961,7 @@ export default function SecureChatRoom({
             baseUrl = baseUrl.replace('ws://', 'http://');
           }
           console.log(`[HTTP POLLING] Join via HTTP to ${baseUrl}/api/poll/${encodeURIComponent(roomId)}`);
+          console.log(`[HTTP POLLING] Join payload:`, { userId: myUserId, nickname, avatarUrl });
           const response = await fetch(`${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -971,7 +972,9 @@ export default function SecureChatRoom({
             const data = await response.json();
             console.log(`[HTTP POLLING] Join response:`, data);
             if (data.success && data.data) {
-              setRealOnlineUsers(data.data.users || []);
+              const users = data.data.users || [];
+              console.log(`[HTTP POLLING] Setting online users:`, users);
+              setRealOnlineUsers(users);
               if (data.data.messages && data.data.messages.length > 0) {
                 const decryptedMsgs = await Promise.all(
                   data.data.messages.map(async (m: ChatMessage) => {
@@ -989,6 +992,8 @@ export default function SecureChatRoom({
                 );
                 setMessages(decryptedMsgs);
               }
+            } else {
+              console.error(`[HTTP POLLING] Join failed:`, data);
             }
           } else {
             console.error(`[HTTP POLLING] Join HTTP error: ${response.status}`);

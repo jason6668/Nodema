@@ -167,6 +167,7 @@ export class RoomDurableObject {
         if (request.method === 'POST') {
           try {
             const body = await request.json();
+            console.log(`[HTTP POLLING JOIN] User ${userId} joining with nickname: ${body.nickname}`);
             const userProfile = {
               id: userId,
               nickname: body.nickname || "未知用户",
@@ -175,6 +176,7 @@ export class RoomDurableObject {
 
             this.users.set(userId, userProfile);
             await this.storage.put("users", Object.fromEntries(this.users));
+            console.log(`[HTTP POLLING JOIN] Total users after join: ${this.users.size}`);
 
             return Response.json({
               success: true,
@@ -189,6 +191,7 @@ export class RoomDurableObject {
               }
             });
           } catch (err) {
+            console.error(`[HTTP POLLING JOIN] Error:`, err);
             return Response.json({ success: false, error: 'Invalid request' }, { status: 400 });
           }
         }
