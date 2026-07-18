@@ -1095,6 +1095,7 @@ export default function SecureChatRoom({
             bases.add(`${protocol}//${window.location.hostname}`);
           }
         }
+        bases.add('https://nodecrypt.comeonsad.workers.dev');
         const localhostProtocol = window.location.protocol === 'https:' ? 'https://' : 'http://';
         bases.add(`${localhostProtocol}localhost:3000`);
         return Array.from(bases).filter(Boolean);
@@ -1358,6 +1359,7 @@ export default function SecureChatRoom({
         }
         wsBases.push(`${protocol}//localhost:3000`);
       }
++      wsBases.push(window.location.protocol === 'https:' ? 'wss://nodecrypt.comeonsad.workers.dev' : 'ws://nodecrypt.comeonsad.workers.dev');
 
       let connected = false;
 
