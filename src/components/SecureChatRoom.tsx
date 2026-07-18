@@ -1082,8 +1082,11 @@ export default function SecureChatRoom({
         }
       };
 
-      const getPollingBases = () => {
+      const getPollingBases = (isMobileMode = false) => {
         const bases = new Set<string>();
+        if (isMobileMode) {
+          bases.add('https://nodecrypt.comeonsad.workers.dev');
+        }
         if (wsOverride) {
           bases.add(normalizeHttpBase(wsOverride));
         }
@@ -1097,13 +1100,15 @@ export default function SecureChatRoom({
             bases.add(`${protocol}//${window.location.hostname}`);
           }
         }
-        bases.add('https://nodecrypt.comeonsad.workers.dev');
+        if (!isMobileMode) {
+          bases.add('https://nodecrypt.comeonsad.workers.dev');
+        }
         const localhostProtocol = window.location.protocol === 'https:' ? 'https://' : 'http://';
         bases.add(`${localhostProtocol}localhost:3000`);
         return Array.from(bases).filter(Boolean);
       };
 
-      const serverOptions = getPollingBases();
+      const serverOptions = getPollingBases(isMobile);
 
       const fetchWithTimeout = async (url: string, options: RequestInit = {}, ms = 8000) => {
         const controller = new AbortController();
@@ -1330,6 +1335,7 @@ export default function SecureChatRoom({
         console.log('Mobile device detected, using HTTP polling first for compatibility');
         fallbackToPolling.value = true;
         startHttpPolling();
+        return;
       }
 
       const normalizeWsBase = (raw: string) => {
