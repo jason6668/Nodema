@@ -1084,15 +1084,7 @@ export default function SecureChatRoom({
 
       const getPollingBases = (isMobileMode = false) => {
         const bases = new Set<string>();
-        if (isMobileMode) {
-          bases.add('https://nodecrypt.comeonsad.workers.dev');
-        }
-        if (wsOverride) {
-          bases.add(normalizeHttpBase(wsOverride));
-        }
-        if (import.meta.env.VITE_WS_URL) {
-          bases.add(normalizeHttpBase(import.meta.env.VITE_WS_URL as string));
-        }
+        // Prefer same-origin first (works when Worker is bound to this domain)
         if (typeof window !== 'undefined') {
           bases.add(window.location.origin);
           if (window.location.hostname && window.location.hostname !== 'localhost') {
@@ -1100,15 +1092,39 @@ export default function SecureChatRoom({
             bases.add(`${protocol}//${window.location.hostname}`);
           }
         }
-        if (!isMobileMode) {
-          bases.add('https://nodecrypt.comeonsad.workers.dev');
+
+        // Then any explicit overrides or env-provided endpoints
+        if (wsOverride) {
+          bases.add(normalizeHttpBase(wsOverride));
         }
+        if (import.meta.env.VITE_WS_URL) {
+          bases.add(normalizeHttpBase(import.meta.env.VITE_WS_URL as string));
+        }
+
+        // Public Cloudflare fallback (kept but after origin/overrides)
+        bases.add('https://nodecrypt.comeonsad.workers.dev');
+
+        // Local development fallback last
         const localhostProtocol = window.location.protocol === 'https:' ? 'https://' : 'http://';
         bases.add(`${localhostProtocol}localhost:3000`);
+
+        // If mobile mode was explicitly requested, move public fallback earlier
+        if (isMobileMode) {
+          // Rebuild array placing public worker right after origin
+          const arr = Array.from(bases);
+          // ensure public worker is present and move it to index 1
+          const pub = 'https://nodecrypt.comeonsad.workers.dev';
+          const filtered = arr.filter(x => x !== pub);
+          filtered.splice(1, 0, pub);
+          return filtered.filter(Boolean);
+        }
+
         return Array.from(bases).filter(Boolean);
       };
 
-      const serverOptions = getPollingBases(false);
+      // Detect mobile here to let polling prefer the best bases
+      const isMobileLocal = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const serverOptions = getPollingBases(isMobileLocal);
 
       const fetchWithTimeout = async (url: string, options: RequestInit = {}, ms = 8000) => {
         const controller = new AbortController();
