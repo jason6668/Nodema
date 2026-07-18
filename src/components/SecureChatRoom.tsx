@@ -1327,7 +1327,9 @@ export default function SecureChatRoom({
       const fallbackToPolling = { value: false };
 
       if (isMobile) {
-        console.log('Mobile device detected, attempting WebSocket first with polling fallback');
+        console.log('Mobile device detected, using HTTP polling first for compatibility');
+        fallbackToPolling.value = true;
+        startHttpPolling();
       }
 
       const normalizeWsBase = (raw: string) => {
