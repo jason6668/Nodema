@@ -1108,7 +1108,7 @@ export default function SecureChatRoom({
         return Array.from(bases).filter(Boolean);
       };
 
-      const serverOptions = getPollingBases(isMobile);
+      const serverOptions = getPollingBases(false);
 
       const fetchWithTimeout = async (url: string, options: RequestInit = {}, ms = 8000) => {
         const controller = new AbortController();
