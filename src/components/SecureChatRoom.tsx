@@ -317,6 +317,7 @@ export default function SecureChatRoom({
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [debugInfo, setDebugInfo] = useState<string>('');
   const wsRef = useRef<WebSocket | null>(null);
+  const connectWsRef = useRef<(() => void) | null>(null);
 
   const [inputText, setInputText] = useState('');
   const [burnTimer, setBurnTimer] = useState<number | undefined>(undefined); // undefined means no self-destruct
@@ -983,6 +984,24 @@ export default function SecureChatRoom({
     };
   }, []);
 
+  // Mobile viewport height fix: set CSS var --vh to handle mobile browser UI chrome
+  useEffect(() => {
+    const setVh = () => {
+      try {
+        document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+      } catch (e) {
+        // ignore on server-side
+      }
+    };
+    setVh();
+    window.addEventListener('resize', setVh);
+    window.addEventListener('orientationchange', setVh);
+    return () => {
+      window.removeEventListener('resize', setVh);
+      window.removeEventListener('orientationchange', setVh);
+    };
+  }, []);
+
   // Track breakpoint changes (mobile/desktop) and auto-close sidebars on mobile
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1599,7 +1618,8 @@ export default function SecureChatRoom({
       };
     };
 
-    connectWs();
+    connectWsRef.current = connectWs;
+    connectWsRef.current();
 
     return () => {
       isDisposed = true;
@@ -1937,6 +1957,7 @@ export default function SecureChatRoom({
 
   return (
     <div
+      style={{ height: `calc(var(--vh, 1vh) * 100 - 2rem)` }}
       className={`w-full ${
         isDesktopLayout
           ? (showSettingsSidebar || showMembersSidebar ? 'max-w-6xl' : 'max-w-2xl')
@@ -1998,6 +2019,17 @@ export default function SecureChatRoom({
               <span className="text-[9px] font-mono text-zinc-500">
                 {connectionStatus === 'connected' ? '已连接' : connectionStatus === 'connecting' ? '连接中...' : '已断开'}
               </span>
+              <button
+                onClick={() => {
+                  setConnectionStatus('connecting');
+                  setDebugInfo('Manual reconnect');
+                  connectWsRef.current?.();
+                }}
+                title="重连"
+                className="ml-2 text-[9px] px-2 py-0.5 rounded bg-zinc-800/40 hover:bg-zinc-700 text-zinc-200"
+              >
+                重连
+              </button>
             </div>
           </div>
         </div>
