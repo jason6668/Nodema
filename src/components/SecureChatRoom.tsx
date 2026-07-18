@@ -1293,7 +1293,19 @@ export default function SecureChatRoom({
 
       // Try multiple bases: override -> env -> current host -> cloudflare -> localhost
       const wsBases: string[] = [];
-      if (wsOverride) wsBases.push(wsOverride.replace(/\/+$/, ''));
+      if (wsOverride) {
+        try {
+          let v = wsOverride.trim();
+          if (!/^wss?:\/\//i.test(v)) {
+            const proto = (typeof window !== 'undefined' && window.location.protocol === 'https:') ? 'wss://' : 'ws://';
+            v = proto + v.replace(/^\/+/, '');
+          }
+          wsBases.push(v.replace(/\/+$/, ''));
+        } catch (e) {
+          // fallback to raw value
+          wsBases.push(wsOverride.replace(/\/+$/, ''));
+        }
+      }
       if (import.meta.env.VITE_WS_URL) wsBases.push((import.meta.env.VITE_WS_URL as string).replace(/\/+$/, ''));
       if (typeof window !== 'undefined') {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1628,8 +1640,8 @@ export default function SecureChatRoom({
     }
 
     try {
-      // 1. Client Side Encryption (E2EE)
-      const encrypted = await encryptText(payloadText, passphrase);
+      // 1. Client Side Encryption (E2EE) — but Web Crypto requires secure context (HTTPS or localhost)
+      const isSecure = typeof window !== 'undefined' ? Boolean(window.isSecureContext) : true;
 
       const messageId = `msg-self-${Date.now()}`;
       const socketMsg: ChatMessage = {
@@ -1638,7 +1650,8 @@ export default function SecureChatRoom({
         userName: nickname,
         avatar: avatarUrl,
         content: payloadText, // Local decrypt is immediate for sender
-        encryptedContent: encrypted,
+        // encryptedContent will be filled when running in secure context
+        encryptedContent: undefined,
         type: msgType,
         replyTo: replyTarget ? {
           id: replyTarget.id,
@@ -1652,6 +1665,21 @@ export default function SecureChatRoom({
         isPrivate: privatePeerName ? true : undefined,
         privateTo: privatePeerName || undefined
       };
+
+      // If secure context, perform encryption. Otherwise mark message as unencrypted for LAN/dev usage.
+      if (isSecure) {
+        try {
+          const encrypted = await encryptText(payloadText, passphrase);
+          socketMsg.encryptedContent = encrypted;
+        } catch (err) {
+          console.error('Encryption failed during send:', err);
+          setDebugInfo('本地加密失败：请检查密钥或在安全上下文 (HTTPS) 下运行。');
+          // fall through — still send plaintext if no other channel
+        }
+      } else {
+        console.warn('Insecure context detected — sending message as plaintext (unencrypted).');
+        (socketMsg as any).unencrypted = true;
+      }
 
       setMessages((prev) => [...prev, socketMsg]);
       setInputText('');
@@ -1676,7 +1704,8 @@ export default function SecureChatRoom({
         console.error(`[SEND MESSAGE] Neither WebSocket nor HTTP polling available. WebSocket state: ${wsRef.current?.readyState}, OPEN: ${WebSocket.OPEN}`);
       }
     } catch (err) {
-      alert('加密失败，请核对密钥设置。');
+      console.error('Send message failed:', err);
+      setDebugInfo('发送失败：' + (err && (err as Error).message ? (err as Error).message : String(err)));
     }
   };
 
