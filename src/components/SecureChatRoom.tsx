@@ -1301,7 +1301,13 @@ export default function SecureChatRoom({
             const proto = (typeof window !== 'undefined' && window.location.protocol === 'https:') ? 'wss://' : 'ws://';
             v = proto + v.replace(/^\/+/, '');
           }
-          wsBases.push(v.replace(/\/+$/, ''));
+
+          // If an explicit /ws/ path is provided, keep it as a full URL.
+          if (/\/ws\/[\w-]+/.test(v)) {
+            wsBases.push(v.replace(/\/+$/, ''));
+          } else {
+            wsBases.push(v.replace(/\/+$/, ''));
+          }
         } catch (e) {
           // fallback to raw value
           wsBases.push(wsOverride.replace(/\/+$/, ''));
@@ -1311,6 +1317,9 @@ export default function SecureChatRoom({
       if (typeof window !== 'undefined') {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         wsBases.push(`${protocol}//${window.location.host}`);
+        if (window.location.hostname && window.location.hostname !== 'localhost') {
+          wsBases.push(`${protocol}//${window.location.hostname}`);
+        }
       }
       wsBases.push('wss://nodecrypt.comeonsad.workers.dev');
       wsBases.push('ws://localhost:3000');
@@ -1319,8 +1328,11 @@ export default function SecureChatRoom({
 
       const tryConnect = (base: string) => {
         if (isDisposed || connected) return;
-        const normalizedBase = base.replace(/\/+$/, '');
-        const wsUrl = `${normalizedBase}/ws/${encodeURIComponent(roomId)}`;
+        let normalizedBase = base.replace(/\/+$/, '');
+        let wsUrl = `${normalizedBase}/ws/${encodeURIComponent(roomId)}`;
+        if (/\/ws\/[\w-]+/i.test(normalizedBase)) {
+          wsUrl = normalizedBase;
+        }
         console.log('Attempting WebSocket to:', wsUrl);
         try {
           const socket = new WebSocket(wsUrl);
@@ -1328,6 +1340,7 @@ export default function SecureChatRoom({
 
           const connTimeout = window.setTimeout(() => {
             if (socket.readyState === WebSocket.CONNECTING) {
+              console.log(`WebSocket connection timed out for ${wsUrl}`);
               try { socket.close(); } catch {}
             }
           }, isMobile ? 10000 : 6000);
@@ -1389,18 +1402,20 @@ export default function SecureChatRoom({
           };
 
           socket.onclose = (event) => {
+            connected = false;
             setConnectionStatus('disconnected');
             setConnectError(`WebSocket 连接已关闭 (${event.code})`);
             setDebugInfo(`Closed: ${event.code}`);
             if (!isDisposed) {
               const backoffTime = Math.min(3000 * Math.pow(2, reconnectAttempts), 30000);
               reconnectAttempts++;
-              setTimeout(() => { if (!connected) connectWs(); }, backoffTime);
+              setTimeout(() => { connectWs(); }, backoffTime);
             }
           };
 
           socket.onerror = (err) => {
             console.error('Socket error:', err);
+            connected = false;
             setConnectionStatus('disconnected');
             setConnectError(`WebSocket 错误，尝试其他地址`);
             setDebugInfo(`Error: ${wsUrl}`);
