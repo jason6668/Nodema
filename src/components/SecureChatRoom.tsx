@@ -776,8 +776,8 @@ export default function SecureChatRoom({
           setActiveCallPeer(data.data.callee);
 
           // Add connection message to chat
-          const callType = callType; // use current call type
-          const secureLabel = callType === 'video' ? '🔒 AES-GCM 端对端加密视频通话已联通' : '🔒 AES-GCM 端对端加密语音通话已联通';
+          const currentCallType = callType; // use current call type
+          const secureLabel = currentCallType === 'video' ? '🔒 AES-GCM 端对端加密视频通话已联通' : '🔒 AES-GCM 端对端加密语音通话已联通';
           setMessages((prev) => [
             ...prev,
             {
@@ -791,7 +791,7 @@ export default function SecureChatRoom({
           ]);
 
           // If video, try setting up webcam
-          if (callType === 'video') {
+          if (currentCallType === 'video') {
             try {
               const stream = await navigator.mediaDevices.getUserMedia({
                 video: { width: 320, height: 240, facingMode: 'user' },
@@ -867,7 +867,7 @@ export default function SecureChatRoom({
       wsRef.current.send(JSON.stringify(callEndedSignal));
     } else {
       // Send via HTTP polling
-      sendCallSignalViaHttp(callEndedSignal);
+      (window as any).sendCallSignalViaHttp?.(callEndedSignal);
     }
 
     setCallState('idle');
