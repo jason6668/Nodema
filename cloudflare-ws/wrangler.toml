@@ -2,12 +2,10 @@ name = "nodema-ws"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
-[durable_objects]
-bindings = [
-  { name = "CHAT_ROOMS", class_name = "ChatRoom" }
-]
+[build]
+command = "npm install --legacy-peer-deps && npm run build"
 
-[[migrations]]
-tag = "v1"
-new_classes = ["ChatRoom"]
+[[routes]]
+pattern = "mi.8818618.xyz/ws/*"
+zone_id = "your_zone_id"
 
