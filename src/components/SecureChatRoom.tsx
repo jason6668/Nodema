@@ -744,7 +744,7 @@ export default function SecureChatRoom({
   };
 
   // Process incoming call signal (from WebSocket or HTTP polling)
-  const handleCallSignal = (data: any) => {
+  const handleCallSignal = async (data: any) => {
     const signalType = data.type;
     console.log(`[CALL SIGNAL] Received ${signalType}:`, data);
 
