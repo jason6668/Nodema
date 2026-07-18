@@ -1036,10 +1036,20 @@ export default function SecureChatRoom({
       setDebugInfo('Using HTTP polling mode');
 
       const serverOptions = [
-        "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker
-        window.location.origin, // Current domain (if self-hosted)
+        window.location.origin, // Current domain (if self-hosted) - most reliable
+        "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker (fallback)
         "http://localhost:3000", // Local development
       ];
+
+      const fetchWithTimeout = async (url: string, options: RequestInit = {}, ms = 8000) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), ms);
+        try {
+          return await fetch(url, { ...options, signal: controller.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+      };
 
       const joinViaHttp = async () => {
         try {
@@ -1051,11 +1061,11 @@ export default function SecureChatRoom({
               console.log(`[HTTP POLLING] Trying server: ${baseUrl}`);
               const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`;
 
-              const response = await fetch(url, {
+              const response = await fetchWithTimeout(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nickname, avatarUrl })
-              });
+              }, 8000);
 
               if (response.ok) {
                 const data = await response.json();
@@ -1109,7 +1119,7 @@ export default function SecureChatRoom({
             try {
               console.log(`[HTTP POLLING] Polling from server: ${baseUrl}`);
               const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=get_messages&userId=${myUserId}`;
-              const response = await fetch(url);
+              const response = await fetchWithTimeout(url, {}, 8000);
 
               if (response.ok) {
                 const data = await response.json();
@@ -1140,7 +1150,11 @@ export default function SecureChatRoom({
                   // Process call signals from polling
                   if (data.data.callSignals && data.data.callSignals.length > 0) {
                     for (const signal of data.data.callSignals) {
-                      handleCallSignal(signal);
+                      try {
+                        await handleCallSignal(signal);
+                      } catch (sigErr) {
+                        console.error('[CALL SIGNAL] Failed to process signal:', sigErr);
+                      }
                     }
                   }
                   successResponse = data;
@@ -1167,11 +1181,11 @@ export default function SecureChatRoom({
             try {
               console.log(`[HTTP POLLING] Sending message to server: ${baseUrl}`);
               const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=send_message&userId=${myUserId}`;
-              const response = await fetch(url, {
+              const response = await fetchWithTimeout(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })
-              });
+              }, 8000);
 
               if (response.ok) {
                 const data = await response.json();
@@ -1206,11 +1220,11 @@ export default function SecureChatRoom({
             try {
               console.log(`[HTTP POLLING] Sending call signal to server: ${baseUrl}`, signal.type);
               const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=send_signal&userId=${myUserId}`;
-              const response = await fetch(url, {
+              const response = await fetchWithTimeout(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ signal })
-              });
+              }, 8000);
 
               if (response.ok) {
                 const data = await response.json();
@@ -1298,7 +1312,7 @@ export default function SecureChatRoom({
           socket.close();
           startHttpPolling();
         }
-      }, 10000); // 10 second timeout for mobile
+      }, 6000); // 6 second timeout for mobile
 
       socket.onopen = () => {
         clearTimeout(connectionTimeout);
