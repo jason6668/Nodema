@@ -1945,6 +1945,26 @@ export default function SecureChatRoom({
         enableBlurOnInactive && !isWindowFocused ? 'blur-md brightness-50 scale-[0.99] pointer-events-none' : ''
       } ${THEMES.find(t => t.id === activeThemeId)?.bgClass || 'bg-[#07090E]'}`}
     >
+      {/* Connection Lost Banner */}
+      {connectionStatus === 'disconnected' && (
+        <div className="fixed left-1/2 -translate-x-1/2 top-4 z-50 w-[min(720px,92%)]">
+          <div className="flex items-center justify-between bg-red-600 text-white px-4 py-2 rounded-xl shadow-lg border border-red-700">
+            <div className="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-11.293a1 1 0 10-1.414-1.414L8.586 6.999 6.707 5.12a1 1 0 10-1.414 1.414L7.172 8.414l-2.88 2.88a1 1 0 101.414 1.414L8.586 9.828l1.293 1.293a1 1 0 001.414-1.414L9.999 8.414l1.708-1.707z" clipRule="evenodd"/></svg>
+              <div className="text-sm font-semibold">已断开</div>
+              <div className="text-xs opacity-90 ml-2">与服务器的连接已丢失，消息将无法同步。</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-white text-red-600 px-3 py-1 rounded-md font-semibold text-sm hover:opacity-95"
+              >
+                重新连接
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Dynamic Animated Theme Effects Layer */}
       <ThemeEffectsOverlay effect={THEMES.find(t => t.id === activeThemeId)?.effect || 'galaxy'} />
 
