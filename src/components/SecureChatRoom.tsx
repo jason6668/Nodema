@@ -1092,7 +1092,6 @@ export default function SecureChatRoom({
             bases.add(`${protocol}//${window.location.hostname}`);
           }
         }
-        bases.add('https://nodecrypt.comeonsad.workers.dev');
         bases.add('http://localhost:3000');
         return Array.from(bases).filter(Boolean);
       };
@@ -1351,7 +1350,6 @@ export default function SecureChatRoom({
           wsBases.push(`${protocol}//${window.location.hostname}`);
         }
       }
-      wsBases.push('wss://nodecrypt.comeonsad.workers.dev');
       wsBases.push('ws://localhost:3000');
 
       let connected = false;
