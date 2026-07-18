@@ -1065,10 +1065,10 @@ export default function SecureChatRoom({
         try {
           let url = raw.trim();
           if (!/^https?:\/\//i.test(url) && /^wss?:\/\//i.test(url)) {
-            url = url.replace(/^wss?:\/\//i, 'http://');
+            url = url.replace(/^wss?:\/\//i, window.location.protocol === 'https:' ? 'https://' : 'http://');
           }
           if (!/^https?:\/\//i.test(url)) {
-            url = `http://${url.replace(/^\/+/, '')}`;
+            url = `${window.location.protocol}//${url.replace(/^\/+/, '')}`;
           }
           const parsed = new URL(url);
           if (parsed.protocol === 'ws:' || parsed.protocol === 'wss:') {
@@ -1085,6 +1085,9 @@ export default function SecureChatRoom({
         if (wsOverride) {
           bases.add(normalizeHttpBase(wsOverride));
         }
+        if (import.meta.env.VITE_WS_URL) {
+          bases.add(normalizeHttpBase(import.meta.env.VITE_WS_URL as string));
+        }
         if (typeof window !== 'undefined') {
           bases.add(window.location.origin);
           if (window.location.hostname && window.location.hostname !== 'localhost') {
@@ -1092,7 +1095,8 @@ export default function SecureChatRoom({
             bases.add(`${protocol}//${window.location.hostname}`);
           }
         }
-        bases.add('http://localhost:3000');
+        const localhostProtocol = window.location.protocol === 'https:' ? 'https://' : 'http://';
+        bases.add(`${localhostProtocol}localhost:3000`);
         return Array.from(bases).filter(Boolean);
       };
 
@@ -1325,13 +1329,16 @@ export default function SecureChatRoom({
 
       const normalizeWsBase = (raw: string) => {
         let base = raw.trim();
+        if (/^wss?:\/\//i.test(base)) {
+          return base.replace(/\/+$/g, '').replace(/\s+/g, '');
+        }
         if (/^https?:\/\//i.test(base)) {
           base = base.replace(/^https?:\/\//i, window.location.protocol === 'https:' ? 'wss://' : 'ws://');
-        } else if (!/^wss?:\/\//i.test(base)) {
+        } else {
           const proto = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
           base = proto + base.replace(/^\/+/, '');
         }
-        return base.replace(/\/+$|\s+/g, '');
+        return base.replace(/\/+$/g, '').replace(/\s+/g, '');
       };
 
       const wsBases: string[] = [];
@@ -1349,8 +1356,8 @@ export default function SecureChatRoom({
         if (window.location.hostname && window.location.hostname !== 'localhost') {
           wsBases.push(`${protocol}//${window.location.hostname}`);
         }
+        wsBases.push(`${protocol}//localhost:3000`);
       }
-      wsBases.push('ws://localhost:3000');
 
       let connected = false;
 
