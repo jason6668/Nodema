@@ -256,7 +256,7 @@ export class RoomDurableObject {
       const now = Date.now();
       this.callSignals = this.callSignals.filter(sig => now - (sig.timestamp || 0) < 30 * 60 * 1000);
 
-      return Response.json({ success: false, error: 'Invalid method' }, { status: 400, headers: corsHeaders });}
+      return Response.json({ success: false, error: 'Invalid method' }, { status: 400, headers: corsHeaders });
     }
 
     return new Response('Not found', { status: 404 });
