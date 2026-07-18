@@ -1138,8 +1138,9 @@ export default function SecureChatRoom({
 
       const joinViaHttp = async () => {
         try {
-          let lastError = null;
-          let successResponse = null;
+          let lastError: any = null;
+          let successResponse: any = null;
+          const failuresDetails: string[] = [];
 
           for (const baseUrl of serverOptions) {
             try {
@@ -1157,9 +1158,15 @@ export default function SecureChatRoom({
                 successResponse = data;
                 console.log(`[HTTP POLLING] Successfully connected to: ${baseUrl}`);
                 break;
+              } else {
+                const txt = await response.text().catch(() => response.statusText || `status ${response.status}`);
+                failuresDetails.push(`${baseUrl} -> HTTP ${response.status}: ${txt}`);
+                lastError = new Error(`HTTP ${response.status}`);
+                continue;
               }
-            } catch (err) {
+            } catch (err: any) {
               console.log(`[HTTP POLLING] Failed to connect to ${baseUrl}:`, err);
+              failuresDetails.push(`${baseUrl} -> ${err.message || String(err)}`);
               lastError = err;
               continue;
             }
@@ -1187,11 +1194,14 @@ export default function SecureChatRoom({
               setMessages(decryptedMsgs);
             }
           } else {
-            throw lastError || new Error('All servers failed');
+            const aggregated = failuresDetails.length ? failuresDetails.join('\n') : (lastError ? String(lastError) : 'All servers failed');
+            setDebugInfo(`HTTP polling failures:\n${aggregated}`);
+            throw new Error(aggregated);
           }
         } catch (err: any) {
           console.error('HTTP polling join failed:', err);
-          alert(`连接失败: 所有服务器都无法连接\n错误: ${err.message}`);
+          const msg = typeof err === 'string' ? err : (err?.message || String(err));
+          alert(`连接失败: 所有服务器都无法连接\n错误: ${msg}`);
         }
       };
 
