@@ -1061,11 +1061,43 @@ export default function SecureChatRoom({
       setConnectionStatus('connected');
       setDebugInfo('Using HTTP polling mode');
 
-      const serverOptions = [
-        window.location.origin, // Current domain (if self-hosted) - most reliable
-        "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker (fallback)
-        "http://localhost:3000", // Local development
-      ];
+      const normalizeHttpBase = (raw: string) => {
+        try {
+          let url = raw.trim();
+          if (!/^https?:\/\//i.test(url) && /^wss?:\/\//i.test(url)) {
+            url = url.replace(/^wss?:\/\//i, 'http://');
+          }
+          if (!/^https?:\/\//i.test(url)) {
+            url = `http://${url.replace(/^\/+/, '')}`;
+          }
+          const parsed = new URL(url);
+          if (parsed.protocol === 'ws:' || parsed.protocol === 'wss:') {
+            parsed.protocol = parsed.protocol === 'wss:' ? 'https:' : 'http:';
+          }
+          return `${parsed.protocol}//${parsed.host}`;
+        } catch {
+          return raw;
+        }
+      };
+
+      const getPollingBases = () => {
+        const bases = new Set<string>();
+        if (wsOverride) {
+          bases.add(normalizeHttpBase(wsOverride));
+        }
+        if (typeof window !== 'undefined') {
+          bases.add(window.location.origin);
+          if (window.location.hostname && window.location.hostname !== 'localhost') {
+            const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+            bases.add(`${protocol}//${window.location.hostname}`);
+          }
+        }
+        bases.add('https://nodecrypt.comeonsad.workers.dev');
+        bases.add('http://localhost:3000');
+        return Array.from(bases).filter(Boolean);
+      };
+
+      const serverOptions = getPollingBases();
 
       const fetchWithTimeout = async (url: string, options: RequestInit = {}, ms = 8000) => {
         const controller = new AbortController();
@@ -1292,28 +1324,26 @@ export default function SecureChatRoom({
         console.log('Mobile device detected, attempting WebSocket first with polling fallback');
       }
 
-      // Try multiple bases: override -> env -> current host -> cloudflare -> localhost
+      const normalizeWsBase = (raw: string) => {
+        let base = raw.trim();
+        if (/^https?:\/\//i.test(base)) {
+          base = base.replace(/^https?:\/\//i, window.location.protocol === 'https:' ? 'wss://' : 'ws://');
+        } else if (!/^wss?:\/\//i.test(base)) {
+          const proto = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+          base = proto + base.replace(/^\/+/, '');
+        }
+        return base.replace(/\/+$|\s+/g, '');
+      };
+
       const wsBases: string[] = [];
       if (wsOverride) {
         try {
-          let v = wsOverride.trim();
-          if (!/^wss?:\/\//i.test(v)) {
-            const proto = (typeof window !== 'undefined' && window.location.protocol === 'https:') ? 'wss://' : 'ws://';
-            v = proto + v.replace(/^\/+/, '');
-          }
-
-          // If an explicit /ws/ path is provided, keep it as a full URL.
-          if (/\/ws\/[\w-]+/.test(v)) {
-            wsBases.push(v.replace(/\/+$/, ''));
-          } else {
-            wsBases.push(v.replace(/\/+$/, ''));
-          }
+          wsBases.push(normalizeWsBase(wsOverride));
         } catch (e) {
-          // fallback to raw value
-          wsBases.push(wsOverride.replace(/\/+$/, ''));
+          wsBases.push(wsOverride.replace(/\/+$|\s+/g, ''));
         }
       }
-      if (import.meta.env.VITE_WS_URL) wsBases.push((import.meta.env.VITE_WS_URL as string).replace(/\/+$/, ''));
+      if (import.meta.env.VITE_WS_URL) wsBases.push(normalizeWsBase(import.meta.env.VITE_WS_URL as string));
       if (typeof window !== 'undefined') {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         wsBases.push(`${protocol}//${window.location.host}`);
@@ -1328,10 +1358,15 @@ export default function SecureChatRoom({
 
       const tryConnect = (base: string) => {
         if (isDisposed || connected) return;
-        let normalizedBase = base.replace(/\/+$/, '');
-        let wsUrl = `${normalizedBase}/ws/${encodeURIComponent(roomId)}`;
-        if (/\/ws\/[\w-]+/i.test(normalizedBase)) {
-          wsUrl = normalizedBase;
+        const normalizedBase = base.replace(/\/+$|\s+/g, '');
+        const hasWsSegment = /\/ws(?:\/|$)/i.test(normalizedBase);
+        const hasRoomPath = /\/ws\/[^/]+$/i.test(normalizedBase);
+        let wsUrl = normalizedBase;
+
+        if (!hasWsSegment) {
+          wsUrl = `${normalizedBase}/ws/${encodeURIComponent(roomId)}`;
+        } else if (!hasRoomPath) {
+          wsUrl = `${normalizedBase.replace(/\/+$|\s+/g, '')}/${encodeURIComponent(roomId)}`;
         }
         console.log('Attempting WebSocket to:', wsUrl);
         try {
