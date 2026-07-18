@@ -942,24 +942,28 @@ export default function SecureChatRoom({
       ? `Entró con éxito a la sala segura E2EE: "${roomId}". Todos los mensajes se cifran localmente con AES-GCM-256 usando la clave "${'*'.repeat(passphrase.length)}".`
       : `成功进入零知识E2EE加密房间: 「${roomId}」。所有消息都在本地通过密钥「${'*'.repeat(passphrase.length)}」进行 AES-GCM-256 对称加解密。服务器只转发不可破解的密文，真正零知晓。`;
 
+    let pollingStarted = false;
+    let pollingIntervalId: number | null = null;
+
     // HTTP polling fallback for mobile devices when WebSocket fails
     const startHttpPolling = () => {
+      if (pollingStarted) {
+        console.log('HTTP polling already started, skipping duplicate initialization');
+        return;
+      }
+      pollingStarted = true;
       console.log('Starting HTTP polling for mobile compatibility');
       setConnectionStatus('connected');
       setDebugInfo('Using HTTP polling mode');
 
-      let pollingInterval: number | null = null;
+      const serverOptions = [
+        "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker
+        window.location.origin, // Current domain (if self-hosted)
+        "http://localhost:3000", // Local development
+      ];
 
-      // Join via HTTP
       const joinViaHttp = async () => {
         try {
-          // Try multiple server options for better connectivity
-          const serverOptions = [
-            "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker
-            window.location.origin, // Current domain (if self-hosted)
-            "http://localhost:3000", // Local development
-          ];
-
           let lastError = null;
           let successResponse = null;
 
@@ -968,31 +972,15 @@ export default function SecureChatRoom({
               console.log(`[HTTP POLLING] Trying server: ${baseUrl}`);
               const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=join&userId=${myUserId}`;
 
-              const xhr = new XMLHttpRequest();
-              xhr.open('POST', url, true);
-              xhr.setRequestHeader('Content-Type', 'application/json');
-
-              const response = await new Promise<any>((resolve, reject) => {
-                xhr.onload = () => {
-                  if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                      const data = JSON.parse(xhr.responseText);
-                      resolve({ ok: true, status: xhr.status, data });
-                    } catch (e) {
-                      reject(new Error('Failed to parse response'));
-                    }
-                  } else {
-                    reject(new Error(`HTTP ${xhr.status}`));
-                  }
-                };
-                xhr.onerror = () => reject(new Error('Network error'));
-                xhr.ontimeout = () => reject(new Error('Request timeout'));
-                xhr.timeout = 10000; // 10 second timeout per server
-                xhr.send(JSON.stringify({ nickname, avatarUrl }));
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname, avatarUrl })
               });
 
               if (response.ok) {
-                successResponse = response;
+                const data = await response.json();
+                successResponse = data;
                 console.log(`[HTTP POLLING] Successfully connected to: ${baseUrl}`);
                 break;
               }
@@ -1003,30 +991,26 @@ export default function SecureChatRoom({
             }
           }
 
-          if (successResponse) {
-            const data = successResponse.data;
-            console.log(`[HTTP POLLING] Join response:`, data);
-            if (data.success && data.data) {
-              const users = data.data.users || [];
-              console.log(`[HTTP POLLING] Setting online users:`, users);
-              setRealOnlineUsers(users);
-              if (data.data.messages && data.data.messages.length > 0) {
-                const decryptedMsgs = await Promise.all(
-                  data.data.messages.map(async (m: ChatMessage) => {
-                    if (m.userId === myUserId) return m;
-                    if (m.encryptedContent && !m.isBurned) {
-                      try {
-                        const decrypted = await decryptText(m.encryptedContent, passphrase);
-                        return { ...m, content: decrypted };
-                      } catch {
-                        return { ...m, content: "🔒 [密码错误：无法解密此消息]" };
-                      }
+          if (successResponse && successResponse.success && successResponse.data) {
+            const users = successResponse.data.users || [];
+            console.log(`[HTTP POLLING] Join response:`, successResponse);
+            setRealOnlineUsers(users);
+            if (successResponse.data.messages && successResponse.data.messages.length > 0) {
+              const decryptedMsgs = await Promise.all(
+                successResponse.data.messages.map(async (m: ChatMessage) => {
+                  if (m.userId === myUserId) return m;
+                  if (m.encryptedContent && !m.isBurned) {
+                    try {
+                      const decrypted = await decryptText(m.encryptedContent, passphrase);
+                      return { ...m, content: decrypted };
+                    } catch {
+                      return { ...m, content: "🔒 [密码错误：无法解密此消息]" };
                     }
-                    return m;
-                  })
-                );
-                setMessages(decryptedMsgs);
-              }
+                  }
+                  return m;
+                })
+              );
+              setMessages(decryptedMsgs);
             }
           } else {
             throw lastError || new Error('All servers failed');
@@ -1037,16 +1021,8 @@ export default function SecureChatRoom({
         }
       };
 
-      // Poll for new messages
       const pollMessages = async () => {
         try {
-          // Try multiple server options for better connectivity
-          const serverOptions = [
-            "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker
-            window.location.origin, // Current domain (if self-hosted)
-            "http://localhost:3000", // Local development
-          ];
-
           let lastError = null;
           let successResponse = null;
 
@@ -1076,7 +1052,6 @@ export default function SecureChatRoom({
                         return m;
                       })
                     );
-                    // Merge new messages instead of replacing all messages
                     setMessages(prev => {
                       const existingIds = new Set(prev.map(m => m.id));
                       const newMessages = decryptedMsgs.filter(m => !existingIds.has(m.id));
@@ -1098,16 +1073,8 @@ export default function SecureChatRoom({
         }
       };
 
-      // Send message via HTTP
       const sendMessageViaHttp = async (message: ChatMessage) => {
         try {
-          // Try multiple server options for better connectivity
-          const serverOptions = [
-            "https://nodecrypt.comeonsad.workers.dev", // Cloudflare Worker
-            window.location.origin, // Current domain (if self-hosted)
-            "http://localhost:3000", // Local development
-          ];
-
           let lastError = null;
           let successResponse = null;
 
@@ -1125,7 +1092,6 @@ export default function SecureChatRoom({
                 const data = await response.json();
                 console.log(`[HTTP POLLING] Send message response from ${baseUrl}:`, data);
                 if (data.success) {
-                  // Add message locally
                   setMessages(prev => [...prev, message]);
                   successResponse = data;
                   break;
@@ -1146,20 +1112,9 @@ export default function SecureChatRoom({
         }
       };
 
-      // Start polling
       joinViaHttp();
-      pollingInterval = window.setInterval(pollMessages, 3000); // Poll every 3 seconds
-
-      // Store sendMessageViaHttp globally for use in message sending
+      pollingIntervalId = window.setInterval(pollMessages, 3000); // Poll every 3 seconds
       (window as any).sendMessageViaHttp = sendMessageViaHttp;
-
-      // Cleanup
-      return () => {
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-        }
-        delete (window as any).sendMessageViaHttp;
-      };
     };
 
     const connectWs = () => {
@@ -1167,12 +1122,10 @@ export default function SecureChatRoom({
 
       // Detect mobile device first
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const fallbackToPolling = { value: false };
 
-      // For mobile devices, directly use HTTP polling
       if (isMobile) {
-        console.log('Mobile device detected, using HTTP polling directly');
-        startHttpPolling();
-        return;
+        console.log('Mobile device detected, attempting WebSocket first with polling fallback');
       }
 
       // Support split deployment: static frontend + separate WS backend
@@ -1217,8 +1170,8 @@ export default function SecureChatRoom({
       connectionTimeout = window.setTimeout(() => {
         if (socket.readyState === WebSocket.CONNECTING) {
           console.error('WebSocket connection timeout for iOS Safari, falling back to HTTP polling');
+          fallbackToPolling.value = true;
           socket.close();
-          // Fallback to HTTP polling for mobile
           startHttpPolling();
         }
       }, 10000); // 10 second timeout for mobile
@@ -1457,7 +1410,13 @@ export default function SecureChatRoom({
       };
 
       socket.onclose = (event) => {
-        console.log('WebSocket connection closed, scheduling reconnect...', event.code, event.reason);
+        console.log('WebSocket connection closed', event.code, event.reason);
+        if (fallbackToPolling.value) {
+          console.log('WebSocket fallback to polling active, no reconnect will be attempted');
+          return;
+        }
+
+        console.log('Scheduling WebSocket reconnect...', event.code, event.reason);
         setConnectionStatus('disconnected');
         setDebugInfo(`Disconnected: ${event.code} - ${event.reason}`);
         if (!isDisposed) {
@@ -1475,12 +1434,16 @@ export default function SecureChatRoom({
         console.error('User Agent:', navigator.userAgent);
         setConnectionStatus('disconnected');
         setDebugInfo(`Error: ${wsUrl}`);
-        // Show alert for mobile debugging
-        alert(`连接错误: 尝试连接 ${wsUrl} 失败\nUser Agent: ${navigator.userAgent}\n正在切换到HTTP轮询模式...`);
-        // Fallback to HTTP polling for mobile
-        clearTimeout(connectionTimeout);
-        startHttpPolling();
-        // Don't immediately close - let onclose handle reconnection
+
+        if (!fallbackToPolling.value) {
+          fallbackToPolling.value = true;
+          clearTimeout(connectionTimeout);
+          if (socket.readyState !== WebSocket.CLOSED && socket.readyState !== WebSocket.CLOSING) {
+            socket.close();
+          }
+          console.log('Switching to HTTP polling mode due to WebSocket error');
+          startHttpPolling();
+        }
       };
     };
 
