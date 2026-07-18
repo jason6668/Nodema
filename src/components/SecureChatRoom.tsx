@@ -597,30 +597,6 @@ export default function SecureChatRoom({
         console.warn('Webcam permission denied or unavailable:', err);
       }
     }
-
-    // Auto connect after 3.5 seconds simulating peer pickup
-    setTimeout(() => {
-      if (ringtoneIntervalRef.current) {
-        clearInterval(ringtoneIntervalRef.current);
-        ringtoneIntervalRef.current = null;
-      }
-      playConnectedSound();
-      setCallState('connected');
-
-      // Add connection message to chat E2EE
-      const secureLabel = type === 'video' ? '🔒 AES-GCM 端对端加密视频通话已联通' : '🔒 AES-GCM 端对端加密语音通话已联通';
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `call-log-start-${Date.now()}`,
-          userId: 'system',
-          userName: 'NodeCrypt',
-          avatar: '',
-          content: `${secureLabel} (与 ${randomPeer.name} 连麦中)`,
-          type: 'system'
-        }
-      ]);
-    }, 3500);
   };
 
   // Initiate private call with specific user
@@ -670,30 +646,6 @@ export default function SecureChatRoom({
         console.warn('Webcam permission denied or unavailable:', err);
       }
     }
-
-    // Auto connect after 3.5 seconds simulating peer pickup
-    setTimeout(() => {
-      if (ringtoneIntervalRef.current) {
-        clearInterval(ringtoneIntervalRef.current);
-        ringtoneIntervalRef.current = null;
-      }
-      playConnectedSound();
-      setCallState('connected');
-
-      // Add connection message to chat E2EE
-      const secureLabel = type === 'video' ? '🔒 AES-GCM 端对端加密视频通话已联通' : '🔒 AES-GCM 端对端加密语音通话已联通';
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `private-call-log-start-${Date.now()}`,
-          userId: 'system',
-          userName: 'NodeCrypt',
-          avatar: '',
-          content: `${secureLabel} (与 ${user.nickname} 私聊通话中)`,
-          type: 'system'
-        }
-      ]);
-    }, 3500);
   };
 
   // Accept incoming call
@@ -822,6 +774,34 @@ export default function SecureChatRoom({
           playConnectedSound();
           setCallState('connected');
           setActiveCallPeer(data.data.callee);
+
+          // Add connection message to chat
+          const callType = callType; // use current call type
+          const secureLabel = callType === 'video' ? '🔒 AES-GCM 端对端加密视频通话已联通' : '🔒 AES-GCM 端对端加密语音通话已联通';
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `call-log-start-${Date.now()}`,
+              userId: 'system',
+              userName: 'NodeCrypt',
+              avatar: '',
+              content: `${secureLabel} (与 ${data.data.callee.name} 通话中)`,
+              type: 'system'
+            }
+          ]);
+
+          // If video, try setting up webcam
+          if (callType === 'video') {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                video: { width: 320, height: 240, facingMode: 'user' },
+                audio: true
+              });
+              setLocalStream(stream);
+            } catch (err) {
+              console.warn('Webcam permission denied or unavailable:', err);
+            }
+          }
         }
         break;
       }
@@ -1457,6 +1437,20 @@ export default function SecureChatRoom({
                 playConnectedSound();
                 setCallState('connected');
                 setIncomingCall(null);
+
+                // Add connection message to chat E2EE
+                const secureLabel = callType === 'video' ? '🔒 AES-GCM 端对端加密视频通话已联通' : '🔒 AES-GCM 端对端加密语音通话已联通';
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: `call-log-start-${Date.now()}`,
+                    userId: 'system',
+                    userName: 'NodeCrypt',
+                    avatar: '',
+                    content: `${secureLabel} (与 ${data.callee?.name || activeCallPeer?.name} 通话中)`,
+                    type: 'system'
+                  }
+                ]);
               }
               break;
             }
