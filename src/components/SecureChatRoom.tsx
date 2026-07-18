@@ -559,18 +559,24 @@ export default function SecureChatRoom({
     const randomPeer = realPeers[Math.floor(Math.random() * realPeers.length)];
     setActiveCallPeer({ name: randomPeer.nickname, avatar: randomPeer.avatarUrl, id: randomPeer.id });
 
-    // Send call invitation via WebSocket
+    // Create call signal
+    const callSignal = {
+      type: 'call_invitation',
+      roomId,
+      userId: myUserId,
+      data: {
+        caller: { name: nickname, avatar: avatarUrl, id: myUserId },
+        callee: { id: randomPeer.id },
+        callType: type
+      }
+    };
+
+    // Send call invitation via WebSocket or HTTP polling
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'call_invitation',
-        roomId,
-        userId: myUserId,
-        data: {
-          caller: { name: nickname, avatar: avatarUrl, id: myUserId },
-          callee: { id: randomPeer.id },
-          callType: type
-        }
-      }));
+      wsRef.current.send(JSON.stringify(callSignal));
+    } else {
+      // Send via HTTP polling (use global function)
+      (window as any).sendCallSignalViaHttp?.(callSignal);
     }
 
     // Play ringing loop sound
@@ -626,18 +632,24 @@ export default function SecureChatRoom({
     setIsCallCameraOff(false);
     setActiveCallPeer({ name: user.nickname, avatar: user.avatarUrl, id: user.id });
 
-    // Send call invitation via WebSocket
+    // Create call signal
+    const callSignal = {
+      type: 'call_invitation',
+      roomId,
+      userId: myUserId,
+      data: {
+        caller: { name: nickname, avatar: avatarUrl, id: myUserId },
+        callee: { id: user.id },
+        callType: type
+      }
+    };
+
+    // Send call invitation via WebSocket or HTTP polling
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'call_invitation',
-        roomId,
-        userId: myUserId,
-        data: {
-          caller: { name: nickname, avatar: avatarUrl, id: myUserId },
-          callee: { id: user.id },
-          callType: type
-        }
-      }));
+      wsRef.current.send(JSON.stringify(callSignal));
+    } else {
+      // Send via HTTP polling (use global function)
+      (window as any).sendCallSignalViaHttp?.(callSignal);
     }
 
     // Play ringing loop sound
@@ -698,17 +710,23 @@ export default function SecureChatRoom({
     setActiveCallPeer(incomingCall.caller);
     setIncomingCall(null);
 
-    // Send acceptance via WebSocket
+    // Create acceptance signal
+    const acceptanceSignal = {
+      type: 'call_accepted',
+      roomId,
+      userId: myUserId,
+      data: {
+        caller: incomingCall.caller,
+        callee: { name: nickname, avatar: avatarUrl, id: myUserId }
+      }
+    };
+
+    // Send acceptance via WebSocket or HTTP polling
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'call_accepted',
-        roomId,
-        userId: myUserId,
-        data: {
-          caller: incomingCall.caller,
-          callee: { name: nickname, avatar: avatarUrl, id: myUserId }
-        }
-      }));
+      wsRef.current.send(JSON.stringify(acceptanceSignal));
+    } else {
+      // Send via HTTP polling (use global function)
+      (window as any).sendCallSignalViaHttp?.(acceptanceSignal);
     }
 
     // If video, try setting up webcam
@@ -750,21 +768,97 @@ export default function SecureChatRoom({
       ringtoneIntervalRef.current = null;
     }
 
-    // Send rejection via WebSocket
+    // Create rejection signal
+    const rejectionSignal = {
+      type: 'call_rejected',
+      roomId,
+      userId: myUserId,
+      data: {
+        caller: incomingCall.caller,
+        callee: { name: nickname, avatar: avatarUrl, id: myUserId }
+      }
+    };
+
+    // Send rejection via WebSocket or HTTP polling
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'call_rejected',
-        roomId,
-        userId: myUserId,
-        data: {
-          caller: incomingCall.caller,
-          callee: { name: nickname, avatar: avatarUrl, id: myUserId }
-        }
-      }));
+      wsRef.current.send(JSON.stringify(rejectionSignal));
+    } else {
+      // Send via HTTP polling (use global function)
+      (window as any).sendCallSignalViaHttp?.(rejectionSignal);
     }
 
     setIncomingCall(null);
     playHangupSound();
+  };
+
+  // Process incoming call signal (from WebSocket or HTTP polling)
+  const handleCallSignal = (data: any) => {
+    const signalType = data.type;
+    console.log(`[CALL SIGNAL] Received ${signalType}:`, data);
+
+    switch (signalType) {
+      case 'call_invitation': {
+        // Only show invitation if it's for me
+        if (data.data?.callee?.id === myUserId) {
+          setIncomingCall({
+            caller: data.data.caller,
+            type: data.data.callType
+          });
+          playRingingSound();
+          if (ringtoneIntervalRef.current) clearInterval(ringtoneIntervalRef.current);
+          ringtoneIntervalRef.current = setInterval(() => {
+            playRingingSound();
+          }, 2500);
+        }
+        break;
+      }
+      case 'call_accepted': {
+        // Caller received acceptance
+        if (data.data?.caller?.id === myUserId) {
+          if (ringtoneIntervalRef.current) {
+            clearInterval(ringtoneIntervalRef.current);
+            ringtoneIntervalRef.current = null;
+          }
+          playConnectedSound();
+          setCallState('connected');
+          setActiveCallPeer(data.data.callee);
+        }
+        break;
+      }
+      case 'call_rejected': {
+        // Caller received rejection
+        if (data.data?.caller?.id === myUserId) {
+          if (ringtoneIntervalRef.current) {
+            clearInterval(ringtoneIntervalRef.current);
+            ringtoneIntervalRef.current = null;
+          }
+          setCallState('idle');
+          setCallType(null);
+          setActiveCallPeer(null);
+          if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            setLocalStream(null);
+          }
+          alert('对方拒绝了通话邀请');
+        }
+        break;
+      }
+      case 'call_ended': {
+        if (ringtoneIntervalRef.current) {
+          clearInterval(ringtoneIntervalRef.current);
+          ringtoneIntervalRef.current = null;
+        }
+        setCallState('idle');
+        setCallType(null);
+        setActiveCallPeer(null);
+        setIncomingCall(null);
+        if (localStream) {
+          localStream.getTracks().forEach(track => track.stop());
+          setLocalStream(null);
+        }
+        break;
+      }
+    }
   };
 
   // Disconnect call session
@@ -779,16 +873,21 @@ export default function SecureChatRoom({
       setLocalStream(null);
     }
 
-    // Send call ended signal
+    const callEndedSignal = {
+      type: 'call_ended',
+      roomId,
+      userId: myUserId,
+      data: {
+        peer: activeCallPeer
+      }
+    };
+
+    // Send via WebSocket if available
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'call_ended',
-        roomId,
-        userId: myUserId,
-        data: {
-          peer: activeCallPeer
-        }
-      }));
+      wsRef.current.send(JSON.stringify(callEndedSignal));
+    } else {
+      // Send via HTTP polling
+      sendCallSignalViaHttp(callEndedSignal);
     }
 
     setCallState('idle');
@@ -1058,6 +1157,12 @@ export default function SecureChatRoom({
                       return [...prev, ...newMessages];
                     });
                   }
+                  // Process call signals from polling
+                  if (data.data.callSignals && data.data.callSignals.length > 0) {
+                    for (const signal of data.data.callSignals) {
+                      handleCallSignal(signal);
+                    }
+                  }
                   successResponse = data;
                   break;
                 }
@@ -1112,9 +1217,48 @@ export default function SecureChatRoom({
         }
       };
 
+      const sendCallSignalViaHttp = async (signal: any) => {
+        try {
+          let lastError = null;
+          let successResponse = null;
+
+          for (const baseUrl of serverOptions) {
+            try {
+              console.log(`[HTTP POLLING] Sending call signal to server: ${baseUrl}`, signal.type);
+              const url = `${baseUrl}/api/poll/${encodeURIComponent(roomId)}?method=send_signal&userId=${myUserId}`;
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ signal })
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                console.log(`[HTTP POLLING] Send signal response from ${baseUrl}:`, data);
+                if (data.success) {
+                  successResponse = data;
+                  break;
+                }
+              }
+            } catch (err) {
+              console.log(`[HTTP POLLING] Failed to send signal to ${baseUrl}:`, err);
+              lastError = err;
+              continue;
+            }
+          }
+
+          if (!successResponse) {
+            console.error('HTTP send call signal failed:', lastError);
+          }
+        } catch (err) {
+          console.error('HTTP send call signal failed:', err);
+        }
+      };
+
       joinViaHttp();
       pollingIntervalId = window.setInterval(pollMessages, 3000); // Poll every 3 seconds
       (window as any).sendMessageViaHttp = sendMessageViaHttp;
+      (window as any).sendCallSignalViaHttp = sendCallSignalViaHttp;
     };
 
     const connectWs = () => {

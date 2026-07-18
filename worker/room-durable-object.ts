@@ -39,6 +39,7 @@ export class RoomDurableObject {
   private sessions: Map<WebSocket, string> = new Map(); // WebSocket -> userId
   private storage: DurableObjectStorage;
   private messages: ChatMessage[] = [];
+  private callSignals: any[] = []; // Store pending call signals for polling
   private users: Map<string, UserProfile> = new Map();
   private activeThemeId: string = 'sakura_dream';
   private isLiveActive: boolean = false;
@@ -61,6 +62,7 @@ export class RoomDurableObject {
       const storedLiveStreamer = await this.storage.get<string>("liveStreamer");
       const storedCoHosts = await this.storage.get<UserProfile[]>("activeCoHosts");
       const storedPoll = await this.storage.get<any>("currentPoll");
+      const storedSignals = await this.storage.get<any[]>("callSignals");
       
       if (storedMessages) this.messages = storedMessages;
       if (storedUsers) this.users = new Map(Object.entries(storedUsers));
@@ -69,6 +71,7 @@ export class RoomDurableObject {
       if (storedLiveStreamer !== undefined) this.liveStreamer = storedLiveStreamer;
       if (storedCoHosts) this.activeCoHosts = storedCoHosts;
       if (storedPoll) this.currentPoll = storedPoll;
+      if (storedSignals) this.callSignals = storedSignals;
     });
   }
 
@@ -150,10 +153,15 @@ export class RoomDurableObject {
       if (method === 'get_messages') {
         // Return current messages for polling
         console.log(`[HTTP POLLING] Getting messages for ${userId}, current messages: ${this.messages.length}`);
+        // Filter call signals for this user only
+        const relevantSignals = this.callSignals.filter(sig => 
+          sig.data.callee?.id === userId || sig.data.caller?.id === userId
+        );
         return Response.json({
           type: 'poll_response',
           data: {
             messages: this.messages,
+            callSignals: relevantSignals,
             users: Array.from(this.users.values()),
             activeThemeId: this.activeThemeId,
             isLiveActive: this.isLiveActive,
@@ -162,6 +170,29 @@ export class RoomDurableObject {
             currentPoll: this.currentPoll
           }
         }, { headers: corsHeaders });
+      }
+
+      if (method === 'send_signal' && userId) {
+        // Handle call signal sending via HTTP POST
+        if (request.method === 'POST') {
+          try {
+            const body = await request.json();
+            const signal = body.signal;
+            console.log(`[HTTP POLLING] Received signal from ${userId}:`, signal.type);
+            // Store signal for polling (keep only recent signals)
+            this.callSignals.push({ ...signal, timestamp: Date.now() });
+            if (this.callSignals.length > 100) {
+              this.callSignals = this.callSignals.slice(-100);
+            }
+            await this.storage.put("callSignals", this.callSignals);
+            // Broadcast to WebSocket clients
+            this.broadcastToAll(signal);
+            return Response.json({ success: true }, { headers: corsHeaders });
+          } catch (err) {
+            console.error(`[HTTP POLLING] Send signal error:`, err);
+            return Response.json({ success: false, error: 'Invalid request' }, { status: 400, headers: corsHeaders });
+          }
+        }
       }
 
       if (method === 'send_message' && userId) {
@@ -196,10 +227,16 @@ export class RoomDurableObject {
             await this.storage.put("users", Object.fromEntries(this.users));
             console.log(`[HTTP POLLING JOIN] Total users after join: ${this.users.size}`);
 
+            // Filter call signals for this user
+            const relevantSignals = this.callSignals.filter(sig => 
+              sig.data.callee?.id === userId || sig.data.caller?.id === userId
+            );
+
             return Response.json({
               success: true,
               data: {
                 messages: this.messages,
+                callSignals: relevantSignals,
                 users: Array.from(this.users.values()),
                 activeThemeId: this.activeThemeId,
                 isLiveActive: this.isLiveActive,
@@ -215,7 +252,11 @@ export class RoomDurableObject {
         }
       }
 
-      return Response.json({ success: false, error: 'Invalid method' }, { status: 400, headers: corsHeaders });
+      // Clean up old signals periodically (keep only last 30 minutes)
+      const now = Date.now();
+      this.callSignals = this.callSignals.filter(sig => now - (sig.timestamp || 0) < 30 * 60 * 1000);
+
+      return Response.json({ success: false, error: 'Invalid method' }, { status: 400, headers: corsHeaders });}
     }
 
     return new Response('Not found', { status: 404 });
@@ -259,6 +300,18 @@ export class RoomDurableObject {
         break;
       case 'signal':
         this.handleSignal(userId, data);
+        break;
+      case 'call_invitation':
+        await this.handleCallSignal(userId, data);
+        break;
+      case 'call_accepted':
+        await this.handleCallSignal(userId, data);
+        break;
+      case 'call_rejected':
+        await this.handleCallSignal(userId, data);
+        break;
+      case 'call_ended':
+        await this.handleCallSignal(userId, data);
         break;
     }
   }
@@ -413,6 +466,26 @@ export class RoomDurableObject {
         signalData: data.signalData,
         callType: data.callType
       }
+    });
+  }
+
+  private async handleCallSignal(userId: string, data: any) {
+    const signalType = data.type || 'call_invitation';
+    console.log(`[CALL SIGNAL] Processing ${signalType} from ${userId}`);
+    
+    // Store signal for HTTP polling
+    this.callSignals.push({ ...data, timestamp: Date.now() });
+    if (this.callSignals.length > 100) {
+      this.callSignals = this.callSignals.slice(-100);
+    }
+    await this.storage.put("callSignals", this.callSignals);
+    
+    // Broadcast to all WebSocket clients
+    this.broadcastToAll({
+      type: signalType,
+      roomId: this.roomId,
+      userId: userId,
+      data: data.data || {}
     });
   }
 
