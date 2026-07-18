@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import path from "path";
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
@@ -70,6 +71,8 @@ function getOrCreateRoom(roomId: string): RoomState {
 
 async function startServer() {
   const app = express();
+  app.use(cors());
+  app.use(express.json());
   const server = http.createServer(app);
   const wss = new WebSocketServer({ server });
   const PORT = Number(process.env.PORT) || 3000;
@@ -77,6 +80,94 @@ async function startServer() {
   // Serve static JSON metadata if needed
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", rooms: roomsDb.size });
+  });
+
+  interface PollQueue {
+    signals: any[];
+  }
+  const pollingQueues = new Map<string, PollQueue>();
+
+  const getOrCreatePollQueue = (roomId: string): PollQueue => {
+    let queue = pollingQueues.get(roomId);
+    if (!queue) {
+      queue = { signals: [] };
+      pollingQueues.set(roomId, queue);
+    }
+    return queue;
+  };
+
+  app.post('/api/poll/:roomId', (req, res) => {
+    const { roomId } = req.params;
+    const method = req.query.method as string;
+    const userId = req.query.userId as string;
+    const room = getOrCreateRoom(roomId);
+    const pollQueue = getOrCreatePollQueue(roomId);
+
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'Missing userId' });
+    }
+
+    if (method === 'join') {
+      const { nickname, avatarUrl } = req.body || {};
+      const userProfile: UserProfile = {
+        id: userId,
+        nickname: nickname || '未知用户',
+        avatarUrl: avatarUrl || ''
+      };
+      room.users.set(userId, userProfile);
+      console.log(`[HTTP POLLING] User ${userId} joined room ${roomId}`);
+      return res.json({
+        success: true,
+        data: {
+          users: Array.from(room.users.values()),
+          messages: room.messages,
+          activeThemeId: room.activeThemeId,
+          isLiveActive: room.isLiveActive,
+          liveStreamer: room.liveStreamer,
+          activeCoHosts: room.activeCoHosts,
+          currentPoll: room.currentPoll
+        }
+      });
+    }
+
+    if (method === 'get_messages') {
+      const signals = pollQueue.signals.slice();
+      pollQueue.signals = [];
+      return res.json({
+        success: true,
+        type: 'poll_response',
+        data: {
+          users: Array.from(room.users.values()),
+          messages: room.messages,
+          callSignals: signals
+        }
+      });
+    }
+
+    if (method === 'send_message') {
+      const { message } = req.body || {};
+      if (!message || !message.id) {
+        return res.status(400).json({ success: false, error: 'Invalid message body' });
+      }
+      if (!room.messages.some((m) => m.id === message.id)) {
+        room.messages.push(message);
+        if (room.messages.length > 500) {
+          room.messages.shift();
+        }
+      }
+      return res.json({ success: true });
+    }
+
+    if (method === 'send_signal') {
+      const { signal } = req.body || {};
+      if (!signal) {
+        return res.status(400).json({ success: false, error: 'Invalid signal body' });
+      }
+      pollQueue.signals.push(signal);
+      return res.json({ success: true });
+    }
+
+    return res.status(400).json({ success: false, error: 'Unknown polling method' });
   });
 
   // Client connection tracking map
