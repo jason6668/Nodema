@@ -1064,8 +1064,10 @@ export default function SecureChatRoom({
       const normalizeHttpBase = (raw: string) => {
         try {
           let url = raw.trim();
-          if (!/^https?:\/\//i.test(url) && /^wss?:\/\//i.test(url)) {
-            url = url.replace(/^wss?:\/\//i, window.location.protocol === 'https:' ? 'https://' : 'http://');
+          if (/^ws:\/\//i.test(url)) {
+            url = url.replace(/^ws:\/\//i, 'http://');
+          } else if (/^wss:\/\//i.test(url)) {
+            url = url.replace(/^wss:\/\//i, 'https://');
           }
           if (!/^https?:\/\//i.test(url)) {
             url = `${window.location.protocol}//${url.replace(/^\/+/, '')}`;
