@@ -192,8 +192,6 @@ export class RoomDurableObject {
             console.error(`[HTTP POLLING] Send signal error:`, err);
             return Response.json({ success: false, error: 'Invalid request' }, { status: 400, headers: corsHeaders });
           }
-        } else {
-          return Response.json({ success: false, error: 'POST method required' }, { status: 405, headers: corsHeaders });
         }
       }
 
@@ -210,8 +208,6 @@ export class RoomDurableObject {
             console.error(`[HTTP POLLING] Send message error:`, err);
             return Response.json({ success: false, error: 'Invalid request' }, { status: 400, headers: corsHeaders });
           }
-        } else {
-          return Response.json({ success: false, error: 'POST method required' }, { status: 405, headers: corsHeaders });
         }
       }
 
@@ -253,8 +249,6 @@ export class RoomDurableObject {
             console.error(`[HTTP POLLING JOIN] Error:`, err);
             return Response.json({ success: false, error: 'Invalid request' }, { status: 400, headers: corsHeaders });
           }
-        } else {
-          return Response.json({ success: false, error: 'POST method required' }, { status: 405, headers: corsHeaders });
         }
       }
 
