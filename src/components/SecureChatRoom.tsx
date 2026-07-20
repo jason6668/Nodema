@@ -1101,7 +1101,8 @@ export default function SecureChatRoom({
           bases.add(normalizeHttpBase(import.meta.env.VITE_WS_URL as string));
         }
 
-        // Public Cloudflare fallback (kept but after origin/overrides)
+        // Public Cloudflare fallback (prefer the currently reachable endpoint)
+        bases.add('https://mi.8818618.xyz');
         bases.add('https://nodecrypt.comeonsad.workers.dev');
 
         // Local development fallback last
@@ -1113,8 +1114,9 @@ export default function SecureChatRoom({
           // Rebuild array placing public worker right after origin
           const arr = Array.from(bases);
           // ensure public worker is present and move it to index 1
-          const pub = 'https://nodecrypt.comeonsad.workers.dev';
-          const filtered = arr.filter(x => x !== pub);
+          const pub = 'https://mi.8818618.xyz';
+          const legacy = 'https://nodecrypt.comeonsad.workers.dev';
+          const filtered = arr.filter(x => x !== pub && x !== legacy);
           filtered.splice(1, 0, pub);
           return filtered.filter(Boolean);
         }
@@ -1395,7 +1397,8 @@ export default function SecureChatRoom({
         }
         wsBases.push(`${protocol}//localhost:3000`);
       }
-+      wsBases.push(window.location.protocol === 'https:' ? 'wss://nodecrypt.comeonsad.workers.dev' : 'ws://nodecrypt.comeonsad.workers.dev');
+      wsBases.push(window.location.protocol === 'https:' ? 'wss://mi.8818618.xyz' : 'ws://mi.8818618.xyz');
+      wsBases.push(window.location.protocol === 'https:' ? 'wss://nodecrypt.comeonsad.workers.dev' : 'ws://nodecrypt.comeonsad.workers.dev');
 
       let connected = false;
 
