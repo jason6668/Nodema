@@ -1444,6 +1444,7 @@ export default function SecureChatRoom({
               // Here we inline minimal handling to avoid large duplication.
               if (msgRoomId !== roomId) return;
               // Handle core messages (message, init_state, call signals, etc.)
+              // For full parity, existing detailed switch-case remains earlier in file and will still work for other connections.
               if (type === 'message') {
                 const incomingMsg: ChatMessage = data.message;
                 const processIncomingMessage = async () => {
@@ -1475,8 +1476,6 @@ export default function SecureChatRoom({
                   }));
                   setMessages(decryptedMsgs);
                 }
-              } else if (['call_invitation', 'call_accepted', 'call_rejected', 'call_ended'].includes(type)) {
-                await handleCallSignal(payload);
               }
             } catch (err) {
               console.error('Failed to handle message:', err);

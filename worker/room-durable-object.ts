@@ -472,30 +472,21 @@ export class RoomDurableObject {
   private async handleCallSignal(userId: string, data: any) {
     const signalType = data.type || 'call_invitation';
     console.log(`[CALL SIGNAL] Processing ${signalType} from ${userId}`);
-
-    const enrichedSignal = {
-      type: signalType,
-      roomId: this.roomId,
-      userId,
-      data: data.data || {}
-    };
-
+    
     // Store signal for HTTP polling
-    this.callSignals.push({ ...enrichedSignal, timestamp: Date.now() });
+    this.callSignals.push({ ...data, timestamp: Date.now() });
     if (this.callSignals.length > 100) {
       this.callSignals = this.callSignals.slice(-100);
     }
     await this.storage.put("callSignals", this.callSignals);
-
-    // Broadcast only to the intended recipient when the signal carries a callee id.
-    if (enrichedSignal.data?.callee?.id) {
-      const targetUserId = enrichedSignal.data.callee.id;
-      this.broadcastToUser(targetUserId, enrichedSignal);
-      return;
-    }
-
-    // Fallback to all clients
-    this.broadcastToAll(enrichedSignal);
+    
+    // Broadcast to all WebSocket clients
+    this.broadcastToAll({
+      type: signalType,
+      roomId: this.roomId,
+      userId: userId,
+      data: data.data || {}
+    });
   }
 
   private handleDisconnect(userId: string) {
@@ -545,26 +536,6 @@ export class RoomDurableObject {
         activeCoHosts: this.activeCoHosts
       }
     });
-  }
-
-  private broadcastToUser(userId: string, message: any, excludeWs?: WebSocket) {
-    const rawMsg = JSON.stringify(message);
-    let sentCount = 0;
-
-    this.sessions.forEach((sessionUserId, ws) => {
-      if (ws !== excludeWs && sessionUserId === userId && ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.send(rawMsg);
-          sentCount++;
-          console.log(`[DURABLE OBJECT BROADCAST] Sent to user ${sessionUserId}`);
-        } catch (err) {
-          console.error('Failed to send to client:', err);
-          this.sessions.delete(ws);
-        }
-      }
-    });
-
-    console.log(`[DURABLE OBJECT BROADCAST] Target user ${userId}, sent: ${sentCount}/${this.sessions.size}`);
   }
 
   private broadcastToAll(message: any, excludeWs?: WebSocket) {
